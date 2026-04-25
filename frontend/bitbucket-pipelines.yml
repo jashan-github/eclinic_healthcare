@@ -1,0 +1,46 @@
+image: node:20.19.0
+
+pipelines:
+  branches:
+    main:
+      - step:
+          name: Build and Deploy to Production
+          deployment: Production
+          size: 2x
+          caches:
+            - node
+          script:
+            - export VITE_API_BASE_URL=$VITE_API_BASE_URL
+            - export VITE_API_BASE_URL_CHAT=$VITE_API_BASE_URL_CHAT
+            - export VITE_API_CHAT_SOCKET=$VITE_API_CHAT_SOCKET
+            - export VITE_API_BASE_URL_WEBINAR=$VITE_API_BASE_URL_WEBINAR
+            - npm ci
+            - npm run build
+            - pipe: atlassian/rsync-deploy:0.12.0
+              variables:
+                USER: $PROD_SSH_USER
+                SERVER: $PROD_SSH_SERVER
+                REMOTE_PATH: $REMOTE_PATH
+                LOCAL_PATH: "dist/"
+                EXTRA_ARGS: "--delete"
+    staging:
+      - step:
+          name: Build and Deploy to Staging
+          deployment: Staging
+          size: 2x
+          caches:
+            - node
+          script:
+            - export VITE_API_BASE_URL=$VITE_API_BASE_URL_STAGING
+            - export VITE_API_BASE_URL_CHAT=$VITE_API_BASE_URL_CHAT_STAGING
+            - export VITE_API_CHAT_SOCKET=$VITE_API_CHAT_SOCKET_STAGING
+            - export VITE_API_BASE_URL_WEBINAR=$VITE_API_BASE_URL_WEBINAR_STAGING
+            - npm ci
+            - npm run build
+            - pipe: atlassian/rsync-deploy:0.12.0
+              variables:
+                USER: $SSH_USER
+                SERVER: $SSH_SERVER
+                REMOTE_PATH: $REMOTE_PATH
+                LOCAL_PATH: "dist/"
+                EXTRA_ARGS: "--delete"

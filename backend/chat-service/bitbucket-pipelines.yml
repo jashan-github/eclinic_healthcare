@@ -1,0 +1,56 @@
+image: atlassian/default-image:4
+
+pipelines:
+  branches:
+    main:
+      - step:
+          name: Deploy FastAPI (Docker | Main)
+          deployment: Production
+          script:
+            - pipe: atlassian/ssh-run:0.6.1
+              variables:
+                SSH_USER: "$SSH_USER"
+                SERVER: $PROD_SERVER_IP
+                SSH_OPTIONS: "-o StrictHostKeyChecking=no"
+                COMMAND: |
+                  set -euxo pipefail
+
+                  echo "Connected as $(whoami)"
+                  cd /var/www/backend/chat-service
+
+                  git config --global --add safe.directory /var/www/backend/chat-service
+                  git fetch origin
+                  git checkout main
+                  git pull origin main  
+
+                  docker compose build
+                  docker compose up -d --remove-orphans
+
+                  docker ps
+                  exit 0
+    staging:
+      - step:
+          name: Deploy FastAPI (Docker | Staging)
+          deployment: staging
+          script:
+            - pipe: atlassian/ssh-run:0.6.1
+              variables:
+                SSH_USER: "$SSH_USER"
+                SERVER: $STAGING_SERVER_IP
+                SSH_OPTIONS: "-o StrictHostKeyChecking=no"
+                COMMAND: |
+                  set -euxo pipefail
+
+                  echo "Connected as $(whoami)"
+                  cd /var/www/backend/chat-service
+
+                  git config --global --add safe.directory /var/www/backend/chat-service
+                  git fetch origin
+                  git checkout staging
+                  git pull origin staging
+
+                  docker compose build
+                  docker compose up -d --remove-orphans
+
+                  docker ps
+                  exit 0

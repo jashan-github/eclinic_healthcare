@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "webinar-service"
+version = "1.0.0"
+description = "Webinar service microservice for healthcare platform"
+authors = ["eClinic Team"]
+
+[tool.black]
+line-length = 100
+target-version = ['py311']
+
+[tool.isort]
+profile = "black"
+line_length = 100
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]

@@ -1,0 +1,92 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swa");
+
+@layer theme, base, mantine, components, utilities;
+
+@import "@mantine/core/styles.css";
+@import "@mantine/core/styles.layer.css";
+
+@import "@mantine/dates/styles.css";
+@import "@mantine/spotlight/styles.css";
+@import "@mantine/dates/styles.css";
+@import "@mantine/dropzone/styles.css";
+
+@import "tailwind-preset-mantine";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --font-poppins: "Poppins", sans-serif;
+}
+
+@layer components {
+  .text-between-lines {
+    @apply flex flex-row;
+  }
+
+  .text-between-lines:before,
+  .text-between-lines:after {
+    content: "";
+    flex: 1 1;
+    border-bottom: 2px solid;
+    margin: auto;
+  }
+
+  .text-between-lines:before {
+    margin-right: 10px;
+  }
+
+  .text-between-lines:after {
+    margin-left: 10px;
+  }
+
+  .sidebar-nav-link-wrapper {
+    @apply w-full h-[60px] justify-center items-center flex flex-col hover:bg-[#F4F6F9] transition-all;
+
+    &.active {
+      @apply text-primary;
+    }
+  }
+}
+
+#root {
+  width: 100%;
+  height: 100dvh;
+  font-weight: 400;
+}
+
+.grid-cols-orvogrid {
+  grid-template-columns: 80px repeat(11, minmax(0, 1fr));
+}
+
+.capitalize-first-letter::first-letter {
+  text-transform: uppercase;
+}
+
+.orvo-base-input {
+  @apply py-6 focus-visible:ring-0;
+}
+
+.orvo-base-card {
+  @apply border-gray-300 rounded shadow-none;
+}
+
+/* .orvo-base-side-sheet {
+  padding: 0 !important;
+} */
+
+.orvo-common-header {
+  @apply border-b border-gray-200 px-4 py-2 flex gap-2 justify-between bg-white items-center;
+}
+
+.orvo-full-height-including-header {
+  @apply h-[calc(100vh-60px)] overflow-hidden;
+}
+
+.mantine-Modal-header {
+  border-bottom: 1px solid #dcdcdc;
+}
+
+button,
+svg {
+  cursor: pointer;
+}

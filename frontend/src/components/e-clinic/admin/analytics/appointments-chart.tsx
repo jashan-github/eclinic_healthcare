@@ -1,0 +1,112 @@
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { useAdminAppointmentsGraph } from '@/hooks/use-analytics'
+import { Loader } from '@mantine/core'
+
+const AppointmentsChart = () => {
+  const { data, isLoading, isError } = useAdminAppointmentsGraph()
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-[400px]">
+        <Loader size="sm" />
+      </div>
+    )
+  }
+
+  if (isError || !data) {
+    return (
+      <div className="flex justify-center items-center h-[400px] text-[#64748B]">
+        Failed to load appointments data
+      </div>
+    )
+  }
+
+  const chartData = data.map((point) => ({
+    month: point.month_label,
+    total_appointments: point.total_appointments,
+    amount_collected: point.amount_collected,
+  }))
+
+  return (
+    <ResponsiveContainer width="100%" height={400}>
+      <AreaChart
+        data={chartData}
+        margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+      >
+        <defs>
+          <linearGradient id="gradientAppointments" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#0F1011" stopOpacity={0.15} />
+            <stop offset="100%" stopColor="#0F1011" stopOpacity={0} />
+          </linearGradient>
+          <linearGradient id="gradientAmountAppt" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#10B981" stopOpacity={0.15} />
+            <stop offset="100%" stopColor="#10B981" stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+        <XAxis
+          dataKey="month"
+          tick={{ fill: '#64748B', fontFamily: 'Poppins', fontSize: 12 }}
+          axisLine={{ stroke: '#E5E7EB' }}
+        />
+        <YAxis
+          yAxisId="left"
+          tick={{ fill: '#64748B', fontFamily: 'Poppins', fontSize: 12 }}
+          axisLine={{ stroke: '#E5E7EB' }}
+        />
+        <YAxis
+          yAxisId="right"
+          orientation="right"
+          tick={{ fill: '#64748B', fontFamily: 'Poppins', fontSize: 12 }}
+          axisLine={{ stroke: '#E5E7EB' }}
+          tickFormatter={(value) => value >= 1000 ? `${value / 1000}k` : `${value}`}
+        />
+        <Tooltip
+          contentStyle={{
+            backgroundColor: 'white',
+            border: '1px solid #E5E7EB',
+            borderRadius: '8px',
+            fontFamily: 'Poppins'
+          }}
+          formatter={(value: number, name: string) => {
+            if (name === 'amount_collected') return [`$${value.toLocaleString()}`, '']
+            return [value, '']
+          }}
+        />
+        <Legend
+          wrapperStyle={{
+            fontFamily: 'Poppins',
+            fontSize: '14px'
+          }}
+          formatter={(value) => {
+            if (value === 'total_appointments') return 'Total Appointments'
+            if (value === 'amount_collected') return 'Amount Collected'
+            return value
+          }}
+        />
+        <Area
+          yAxisId="left"
+          type="monotone"
+          dataKey="total_appointments"
+          stroke="#0F1011"
+          strokeWidth={2}
+          fill="url(#gradientAppointments)"
+          dot={{ fill: '#0F1011', r: 4 }}
+          activeDot={{ r: 6 }}
+        />
+        <Area
+          yAxisId="right"
+          type="monotone"
+          dataKey="amount_collected"
+          stroke="#10B981"
+          strokeWidth={2}
+          fill="url(#gradientAmountAppt)"
+          dot={{ fill: '#10B981', r: 4 }}
+          activeDot={{ r: 6 }}
+        />
+      </AreaChart>
+    </ResponsiveContainer>
+  )
+}
+
+export default AppointmentsChart

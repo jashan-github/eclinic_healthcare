@@ -1,0 +1,54 @@
+services:
+  # FastAPI Backend
+  backend:
+    build: .
+    container_name: eclinic-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=development
+      - DATABASE_URL=postgresql://doadmin:AVNS_DIFzV1UeYUpN6rrOz8T@eclinic-database-do-user-35054447-0.e.db.ondigitalocean.com:25060/defaultdb?sslmode=require
+      - REDIS_URL=redis://eclinic-redis:6379/0
+      - SECRET_KEY=${SECRET_KEY:-your-secret-key-min-32-characters-change-in-production-please}
+      - ENCRYPTION_KEY=osiE3GBJMTc_b3y8dtoI7zzdEEFvmlGR8D-44Mmm0Xc=
+      - ROOT_PATH=/backend/api-fast
+    env_file:
+      - .env
+    networks:
+      - eclinic-network
+    depends_on:
+      redis:
+        condition: service_started
+    # Note: Code volumes commented out due to Docker snap filesystem restrictions
+    # Code is already copied into image via Dockerfile COPY command
+    # Uncomment below for live code reloading (requires Docker snap access to /var/www)
+    # volumes:
+    #   - /home/pravesh/eclinic-backend/app:/app/app
+    #   - /home/pravesh/eclinic-backend/logs:/app/logs
+    #   - /home/pravesh/eclinic-backend/alembic:/app/alembic
+    #   - /home/pravesh/eclinic-backend/scripts:/app/scripts
+    #   - /home/pravesh/eclinic-backend/uploads:/app/uploads
+    volumes:
+      # Use named volumes for persistence (works with Docker snap)
+      - backend-logs:/app/logs
+      - backend-uploads:/app/uploads
+    restart: unless-stopped
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: eclinic-redis
+    volumes:
+      - redis-data:/data
+    networks:
+      - eclinic-network
+    restart: unless-stopped
+
+networks:
+  eclinic-network:
+    external: true
+
+volumes:
+  redis-data:
+  backend-logs:
+  backend-uploads:

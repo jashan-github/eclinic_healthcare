@@ -1,0 +1,32 @@
+services:
+  # Chat Service
+  # Note: Uses shared PostgreSQL (eclinic-postgres) and Redis (eclinic-redis) from eclinic-backend
+  # Both services use bridge network mode, so they can communicate by container name
+  chat-service:
+    build: .
+    container_name: chat-service
+    ports:
+      - "8001:8001"
+    environment:
+      - ENVIRONMENT=production
+      # Use shared PostgreSQL from eclinic-backend (eclinic-postgres container)
+      - DATABASE_URL=postgresql+asyncpg://doadmin:AVNS_DIFzV1UeYUpN6rrOz8T@eclinic-database-do-user-35054447-0.e.db.ondigitalocean.com:25060/defaultdb
+      # Use shared Redis from eclinic-backend (eclinic-redis container)
+      - REDIS_URL=redis://eclinic-redis:6379/0
+      - SECRET_KEY=${SECRET_KEY}
+      - ALGORITHM=HS256
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - ROOT_PATH=/backend/chat-service
+      - CORS_ORIGINS=["*"]
+      - CORS_ALLOW_CREDENTIALS=true
+    env_file:
+      - .env
+    networks:
+      - eclinic-network
+    # Note: depends_on won't work across different docker-compose files
+    # Ensure eclinic-backend services (postgres, redis) are started first
+    restart: unless-stopped
+
+networks:
+  eclinic-network:
+    external: true
