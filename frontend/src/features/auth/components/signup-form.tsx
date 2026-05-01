@@ -32,10 +32,20 @@ const signupSchema = z
     firstName: z.string().min(1, { message: "First name is required" }),
     middleName: z.string().optional(),
     lastName: z.string().min(1, { message: "Last name is required" }),
-    dob: z.string().min(1, { message: "Date of birth is required" }),
-    gender: z.enum(["Male", "Female", "Other"], {
+    dob: z
+      .string()
+      .min(1, { message: "Date of birth is required" })
+      .refine(
+        (v) => {
+          const d = new Date(v);
+          return !Number.isNaN(d.getTime()) && d.getTime() <= Date.now();
+        },
+        { message: "Date of birth cannot be in the future" },
+      ),
+    gender: z.enum(["male", "female", "other"], {
       message: "Gender is required",
     }),
+    countryId: z.string().min(1, { message: "Country is required" }),
     countryCode: z.string().min(1, { message: "Country code is required" }),
     mobileNumber: z.string().min(1, { message: "Mobile number is required" }),
     email: z.string().email({ message: "Please enter a valid email address" }),
@@ -62,7 +72,7 @@ const SignupForm: FC = (): ReactElement => {
   const [lastName, setLastName] = useState("");
   const [dob, setDob] = useState<Date | null>(null);
   const [dobString, setDobString] = useState<string>("");
-  const [gender, setGender] = useState<string>("Male");
+  const [gender, setGender] = useState<string>("male");
   const [countryCode, setCountryCode] = useState<string>("91");
   const [mobileNumber, setMobileNumber] = useState("");
   const [email, setEmail] = useState("");
@@ -136,6 +146,7 @@ const SignupForm: FC = (): ReactElement => {
       lastName,
       dob: dobString || (dob ? dob.toISOString().split("T")[0] : ""),
       gender,
+      countryId: selectedCountryId,
       countryCode,
       mobileNumber,
       email,
@@ -155,7 +166,7 @@ const SignupForm: FC = (): ReactElement => {
       middle_name: middleName || undefined,
       last_name: lastName,
       date_of_birth: dobString || (dob ? dob.toISOString().split("T")[0] : ""),
-      gender: gender as "Male" | "Female" | "Other",
+      gender: gender as "male" | "female" | "other",
       phone_code: countryCode,
       phone_number: mobileNumber,
       email,
@@ -310,6 +321,7 @@ const SignupForm: FC = (): ReactElement => {
                 <input
                   type="date"
                   value={dobString}
+                  max={new Date().toISOString().split("T")[0]}
                   onChange={(e) => {
                     const value = e.target.value;
                     setDobString(value);
@@ -338,7 +350,7 @@ const SignupForm: FC = (): ReactElement => {
                   <Radio.Group value={gender} onChange={setGender}>
                     <Group gap="md">
                       <Radio
-                        value="Male"
+                        value="male"
                         label="Male"
                         styles={{
                           label: {
@@ -348,7 +360,7 @@ const SignupForm: FC = (): ReactElement => {
                         }}
                       />
                       <Radio
-                        value="Female"
+                        value="female"
                         label="Female"
                         styles={{
                           label: {
@@ -358,7 +370,7 @@ const SignupForm: FC = (): ReactElement => {
                         }}
                       />
                       <Radio
-                        value="Other"
+                        value="other"
                         label="Other"
                         styles={{
                           label: {

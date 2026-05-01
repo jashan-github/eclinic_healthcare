@@ -162,7 +162,7 @@ export type SignupPayload = {
   middle_name?: string
   last_name: string
   date_of_birth: string
-  gender: 'Male' | 'Female' | 'Other'
+  gender: 'male' | 'female' | 'other'
   phone_code: string
   phone_number: string
   email: string

@@ -16,7 +16,7 @@ import { useMutation } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useState, type FC, type ReactElement } from "react";
 import { toast } from "react-toastify";
-// import { z } from "zod";
+import { z } from "zod";
 
 import { PROJECT_NAME } from "@/constants";
 import { useAuth } from "@/context/auth/auth-context-utils";
@@ -28,32 +28,31 @@ import { tokenCookies } from "@/utils/cookies";
 import TabsSegment from "./tab-segment";
 import axiosInstance from "@/lib/api";
 import { getFirstAllowedRoute } from "@/utils/permission-utils";
-// import z from "zod";
 
-// const loginSchema = z
-//   .object({
-//     loginMethod: z.enum(["email", "username"]),
-//     emailOrUsername: z.string().min(1, { message: "This field is required" }),
-//     password: z
-//       .string()
-//       .min(8, { message: "Password must be at least 8 characters" }),
-//     role: z.enum(["Doctor", "Patient", "Staff"]), // 'Doctor' value kept for backend compatibility, but displayed as 'Healthcare Provider'
-//     agreedToTerms: z.boolean().refine((val) => val === true, {
-//       message: "You must agree to the terms",
-//     }),
-//   })
-//   .refine(
-//     (data) => {
-//       if (data.loginMethod === "email") {
-//         return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.emailOrUsername);
-//       }
-//       return true;
-//     },
-//     {
-//       message: "Please enter a valid email address",
-//       path: ["emailOrUsername"],
-//     },
-//   );
+const loginSchema = z
+  .object({
+    loginMethod: z.enum(["email", "username"]),
+    emailOrUsername: z.string().min(1, { message: "This field is required" }),
+    password: z
+      .string()
+      .min(8, { message: "Password must be at least 8 characters" }),
+    role: z.enum(["Doctor", "Patient", "Staff"]),
+    agreedToTerms: z.boolean().refine((val) => val === true, {
+      message: "You must agree to the terms",
+    }),
+  })
+  .refine(
+    (data) => {
+      if (data.loginMethod === "email") {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.emailOrUsername);
+      }
+      return true;
+    },
+    {
+      message: "Please enter a valid email address",
+      path: ["emailOrUsername"],
+    },
+  );
 
 const LoginForm: FC = (): ReactElement => {
   const { setAuthStep, setFormData } = useAuthStore();
@@ -139,10 +138,13 @@ const LoginForm: FC = (): ReactElement => {
     },
 
     onError: (error: any) => {
-      const errorsObj = error?.response?.data?.errors;
+      const errorsObj = error?.response?.data?.errors ?? {};
 
       const messages = Object.values(errorsObj).flat();
-      const formattedMessage = messages.map((msg) => `${msg}`).join();
+      const fallback = error?.response?.data?.message || error?.message || "Login failed";
+      const formattedMessage = messages.length
+        ? messages.map((msg) => `${msg}`).join()
+        : fallback;
 
       if (messages.length > 1) {
         toast.error(
@@ -165,11 +167,20 @@ const LoginForm: FC = (): ReactElement => {
   });
 
   const handleLogin = (e: React.FormEvent) => {
-    if (!agreedToTerms) {
-      toast.error("Please accept the Terms & Conditions to continue");
+    e.preventDefault();
+
+    const result = loginSchema.safeParse({
+      loginMethod,
+      emailOrUsername,
+      password,
+      role: active,
+      agreedToTerms,
+    });
+    if (!result.success) {
+      result.error.issues.forEach((issue) => toast.error(issue.message));
       return;
     }
-    e.preventDefault();
+
     const apiPayload: LoginPayload =
       loginMethod === "email"
         ? { email: emailOrUsername, password, role: active }
