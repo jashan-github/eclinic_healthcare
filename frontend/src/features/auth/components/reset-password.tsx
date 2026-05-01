@@ -9,7 +9,7 @@ import { useResetPassword } from '@/hooks/user-reset-password'
 const resetPasswordSchema = z
   .object({
     password: z.string().min(8, { message: 'Password must be at least 8 characters long' }),
-    confirmPassword: z.string()
+    confirmPassword: z.string().min(8, { message: 'Confirm password must be at least 8 characters long' })
   })
   .refine(
     (data) => data.password === data.confirmPassword,
@@ -28,15 +28,15 @@ const ResetPasswordPage: FC = () => {
   // Use the mutation hook
   const mutation = useResetPassword()
 
-  // Check if token is missing and redirect to verification failed page
+  // Check if token or email is missing and redirect to verification failed page
   useEffect(() => {
-    if (!token) {
+    if (!token || !email) {
       navigate({ to: '/auth/reset-password-verification-failed' })
     }
-  }, [token, navigate])
+  }, [token, email, navigate])
 
-  // Don't render form if token is missing
-  if (!token) {
+  // Don't render form if token or email is missing
+  if (!token || !email) {
     return null
   }
 
@@ -51,31 +51,27 @@ const ResetPasswordPage: FC = () => {
       return
     }
 
-    // Email might be optional if token contains email info
-    // Use empty string or email from URL if available
-    const emailForApi = email || ''
-    
-    mutation.mutate({ email: emailForApi, token, password: result.data.password, confirm_password: confirmPassword }, {
+    mutation.mutate({ email, token, password: result.data.password, confirm_password: confirmPassword }, {
       onSuccess: (data) => {
         toast.success(data.message || 'Password reset successfully!')
-        
+
         // Redirect to login
         navigate({ to: '/auth/login' })
       },
       onError: (error: any) => {
-        // Check if error is related to invalid/expired token
+        // Only redirect to verification-failed when the error is actually about the
+        // token/link itself. 400 responses are typically validation errors (e.g. weak
+        // password) and must not trigger the verification-failed flow.
         const errorMessage = error.message || error.response?.data?.message || ''
-        const isVerificationError = 
+        const isVerificationError =
           errorMessage.toLowerCase().includes('invalid') ||
           errorMessage.toLowerCase().includes('expired') ||
           errorMessage.toLowerCase().includes('token') ||
           errorMessage.toLowerCase().includes('verification') ||
-          error.response?.status === 400 ||
           error.response?.status === 401 ||
           error.response?.status === 403
 
         if (isVerificationError) {
-          // Redirect to verification failed page
           navigate({ to: '/auth/reset-password-verification-failed' })
         } else {
           toast.error(errorMessage || 'Failed to reset password. Please try again.')

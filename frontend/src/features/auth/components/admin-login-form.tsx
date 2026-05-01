@@ -3,6 +3,7 @@ import { EnvelopeSimpleIcon, LockKeyIcon } from "@phosphor-icons/react";
 import { useMutation } from "@tanstack/react-query";
 import { useState, type FC, type ReactElement } from "react";
 import { toast } from "react-toastify";
+import { z } from "zod";
 
 import { PROJECT_NAME } from "@/constants";
 import { useAuth } from "@/context/auth/auth-context-utils";
@@ -15,26 +16,25 @@ import { tokenCookies } from "@/utils/cookies";
 import axiosInstance from "@/lib/api";
 import { getFirstAllowedRoute } from "@/utils/permission-utils";
 
-// Zod validation
-// const loginSchema = z.object({
-//   email: z
-//     .string()
-//     .min(1, { message: "Email is required" })
-//     .email({ message: "Please enter a valid email address" }),
-//   password: z
-//     .string()
-//     .min(8, { message: "Password must be at least 8 characters long" }),
-//   agreedToTerms: z.boolean().refine((val) => val === true, {
-//     message: "You must agree to the Terms of Use and Privacy Policy",
-//   }),
-// });
+const adminLoginSchema = z.object({
+  email: z
+    .string()
+    .min(1, { message: "Email is required" })
+    .email({ message: "Please enter a valid email address" }),
+  password: z
+    .string()
+    .min(8, { message: "Password must be at least 8 characters long" }),
+  agreedToTerms: z.boolean().refine((val) => val === true, {
+    message: "You must agree to the Terms of Use and Privacy Policy",
+  }),
+});
 
 const AdminLoginForm: FC = (): ReactElement => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
 
-  const { login } = useAuth();
+  const { login, setIsAuthenticated } = useAuth();
   const { setAuthStep, setFormData } = useAuthStore();
 
   const loginMutation = useMutation({
@@ -54,6 +54,9 @@ const AdminLoginForm: FC = (): ReactElement => {
 
       // Call auth context login function to trigger refetch of /v1/auth/me API
       login(data.access_token);
+
+      // Set authenticated immediately so route guards work
+      setIsAuthenticated(true);
 
       setAuthStep(1);
 
@@ -93,10 +96,13 @@ const AdminLoginForm: FC = (): ReactElement => {
       return;
     },
     onError: (error: any) => {
-      const errorsObj = error?.response?.data?.errors;
+      const errorsObj = error?.response?.data?.errors ?? {};
 
       const messages = Object.values(errorsObj).flat();
-      const formattedMessage = messages.map((msg) => `${msg}`).join();
+      const fallback = error?.response?.data?.message || error?.message || "Login failed";
+      const formattedMessage = messages.length
+        ? messages.map((msg) => `${msg}`).join()
+        : fallback;
       if (messages.length > 1) {
         toast.error(
           <div>
@@ -116,8 +122,14 @@ const AdminLoginForm: FC = (): ReactElement => {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!agreedToTerms) {
-      toast.error("Please accept the Terms & Conditions to continue");
+
+    const result = adminLoginSchema.safeParse({
+      email: email.trim(),
+      password,
+      agreedToTerms,
+    });
+    if (!result.success) {
+      result.error.issues.forEach((issue) => toast.error(issue.message));
       return;
     }
 

@@ -57,7 +57,7 @@ const ForgotPasswordPage: FC = () => {
           </div>
 
           <div className="text-center mb-8">
-            <h1 className="font-poppins font-bold text-2xl text-[#0F1011] mb-2">Reset Password</h1>
+            <h1 className="font-poppins font-bold text-2xl text-[#0F1011] mb-2">Forgot Password</h1>
             <p className="font-poppins text-sm text-gray-600">
               Enter your email and we’ll send you a link to reset your password
             </p>
