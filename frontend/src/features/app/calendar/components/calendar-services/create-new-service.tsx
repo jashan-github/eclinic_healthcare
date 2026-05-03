@@ -179,8 +179,8 @@ const CreateNewService: FC<CreateNewServiceProps> = ({
     </Combobox.Option>
   ))
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const onSubmit = (formData: ServiceFormData) => {
-    console.log('Form Data:', formData)
     // TODO: Replace with backend API call to create service
     setIsOpen(false)
   }

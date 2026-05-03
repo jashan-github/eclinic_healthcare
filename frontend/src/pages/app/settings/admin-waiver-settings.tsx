@@ -37,8 +37,6 @@ const AdminWaiverSettingsPage: FC = (): ReactElement => {
     setInitialSettings(fetched);
   }, [data]);
 
-  console.log(!!settings?.waiver_enabled);
-
   const hasChanges =
     initialSettings &&
     (initialSettings.waiver_enabled !== settings.waiver_enabled ||

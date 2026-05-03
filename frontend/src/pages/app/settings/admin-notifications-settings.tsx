@@ -19,7 +19,7 @@ const AdminNotificationsSettingsPage: FC = (): ReactElement => {
     str.charAt(0).toUpperCase() + str.slice(1);
 
   useEffect(() => {
-    if (!data?.data && !data?.data?.labels) return;
+    if (!data?.data || !data?.data?.labels) return;
 
     const { labels, ...rest } = data.data;
 
