@@ -19,6 +19,12 @@ import Button from "@/components/ui/button";
 import { useAdminDoctors } from "@/hooks/use-admin-doctors";
 import { useMedicalServices } from "@/pages/app/settings/hooks/use-medical-services";
 import { MultiSelect } from "@mantine/core";
+import { toast } from "react-toastify";
+
+const NAME_MIN = 2;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// Backend expects E.164: ^\+?[1-9]\d{1,14}$
+const E164_REGEX = /^\+?[1-9]\d{1,14}$/;
 
 interface AddUserDialogProps {
   isOpen: boolean;
@@ -247,6 +253,36 @@ const AddUserDialog: React.FC<AddUserDialogProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    const trimmedName = formData.name.trim();
+    const trimmedEmail = formData.email.trim();
+    const trimmedPhone = formData.phone.trim();
+
+    if (trimmedName.length < NAME_MIN) {
+      toast.error(`Name must be at least ${NAME_MIN} characters`);
+      return;
+    }
+    if (!EMAIL_REGEX.test(trimmedEmail)) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+    if (trimmedPhone) {
+      const fullPhone = `+${countryCode}${trimmedPhone}`;
+      if (!E164_REGEX.test(fullPhone)) {
+        toast.error("Please enter a valid phone number");
+        return;
+      }
+    }
+    if (formData.role === "doctor") {
+      if (!formData.education.trim()) {
+        toast.error("Education is required for healthcare providers");
+        return;
+      }
+      if (formData.specializations.length === 0) {
+        toast.error("At least one specialization is required for healthcare providers");
+        return;
+      }
+    }
 
     if (isUpdateMode && userId) {
       // Update mode

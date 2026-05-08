@@ -5,6 +5,9 @@ import Modal from '@/components/ui/modal'
 import FormInput from '@/components/ui/form-input'
 import Button from '@/components/ui/button'
 import { Loader, Switch } from '@mantine/core'
+import { toast } from 'react-toastify'
+
+const MAX_SPECIALITY_NAME_LENGTH = 255
 
 interface AddMedicalServiceDialogProps {
   isOpen: boolean
@@ -55,8 +58,18 @@ const AddMedicalServiceDialog: React.FC<AddMedicalServiceDialogProps> = ({ isOpe
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
+    const trimmedName = formData.name.trim()
+    if (!trimmedName) {
+      toast.error('Speciality name is required')
+      return
+    }
+    if (trimmedName.length > MAX_SPECIALITY_NAME_LENGTH) {
+      toast.error(`Speciality name must be ${MAX_SPECIALITY_NAME_LENGTH} characters or fewer`)
+      return
+    }
+
     const payload = {
-      name: formData.name.trim(),
+      name: trimmedName,
       status: formData.status,
     }
 
@@ -114,6 +127,7 @@ const AddMedicalServiceDialog: React.FC<AddMedicalServiceDialogProps> = ({ isOpe
             name="name"
             value={formData.name}
             onChange={handleChange}
+            maxLength={MAX_SPECIALITY_NAME_LENGTH}
             required
           />
 

@@ -1,10 +1,14 @@
 import { useEffect, useState } from "react";
 import { X } from "@phosphor-icons/react";
+import { toast } from "react-toastify";
 import {
   useGetCommissionByService,
   useUpsertCommission,
 } from "@/hooks/use-admin-comission-rate";
 import { useServices } from "@/hooks/use-admin-service-hooks";
+
+const RATE_MIN = 1;
+const RATE_MAX = 100;
 
 type Props = {
   open: boolean;
@@ -113,7 +117,8 @@ export default function EditCommissionModal({
               <input
                 type="number"
                 step={0.5}
-                min={0}
+                min={RATE_MIN}
+                max={RATE_MAX}
                 value={rate.toFixed(2)}
                 onChange={handleRateChange}
                 onBlur={handleRateBlur}
@@ -144,7 +149,13 @@ export default function EditCommissionModal({
 
               <button
                 disabled={!isEdit && !selectedServiceId}
-                onClick={() =>
+                onClick={() => {
+                  if (rate < RATE_MIN || rate > RATE_MAX) {
+                    toast.error(
+                      `Rate must be between ${RATE_MIN}% and ${RATE_MAX}%`,
+                    );
+                    return;
+                  }
                   mutate(
                     {
                       serviceId: isEdit ? serviceId! : selectedServiceId,
@@ -152,8 +163,8 @@ export default function EditCommissionModal({
                       ...(isEdit && { status }),
                     },
                     { onSuccess: onClose },
-                  )
-                }
+                  );
+                }}
                 className="bg-[#002FD4] text-white px-4 py-2 rounded disabled:opacity-50"
               >
                 {isEdit ? "Update" : "Create"}

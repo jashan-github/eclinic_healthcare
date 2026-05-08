@@ -112,6 +112,11 @@ export default function EditWebinarDialog({
             return
         }
 
+        if (title.length > 255) {
+            toast.error('Title must be 255 characters or fewer')
+            return
+        }
+
         // Block inverted time range
         if (endTime <= startTime) {
             toast.error('End time must be after start time')
@@ -202,7 +207,7 @@ export default function EditWebinarDialog({
             <div className="space-y-2">
                 <div className='space-y-2'>
                     <div className="font-poppins font-normal text-sm leading-none text-[#0F1011]">Basic Details</div>
-                    <input type="text" placeholder="Webinar Title" value={title} onChange={(e) => setTitle(e.target.value)}
+                    <input type="text" placeholder="Webinar Title" value={title} maxLength={255} onChange={(e) => setTitle(e.target.value)}
                         className="text-[#6B7280] w-full px-4 py-3 mt-1 font-poppins font-normal text-xs leading-none rounded-md border border-[#E6E7EB] focus:outline-none focus:border-[#002FD4]" />
                     <textarea placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} rows={2}
                         className="text-[#6B7280] w-full px-4 py-3 mt-2 font-poppins font-normal text-xs leading-none rounded-md border border-[#E6E7EB] focus:outline-none focus:border-[#002FD4]" />
