@@ -16,15 +16,36 @@ const formSchema = z.object({
   salutation: z.enum(['Mr', 'Ms', 'Dr'], {
     error: () => 'Salutation is required'
   }),
-  firstName: z.string().min(1, 'First name is required'),
-  middleName: z.string().optional(),
-  lastName: z.string().min(1, 'Last name is required'),
+  firstName: z
+    .string()
+    .min(1, 'First name is required')
+    .max(255, 'First name must be 255 characters or fewer'),
+  middleName: z
+    .string()
+    .max(255, 'Middle name must be 255 characters or fewer')
+    .optional(),
+  lastName: z
+    .string()
+    .min(1, 'Last name is required')
+    .max(255, 'Last name must be 255 characters or fewer'),
   gender: z.enum(['male', 'female', 'other'], {
     error: () => 'Gender is required'
   }),
-  dob: z.string().min(1, 'Date of birth is required'),
+  dob: z
+    .string()
+    .min(1, 'Date of birth is required')
+    .refine(
+      (v) => {
+        const d = new Date(v)
+        return !Number.isNaN(d.getTime()) && d.getTime() <= Date.now()
+      },
+      { message: 'Date of birth must be a valid date in the past' }
+    ),
   countryCode: z.string().min(1, 'Country code is required'),
-  mobile: z.string().min(10, 'Mobile number must be at least 10 digits'),
+  mobile: z
+    .string()
+    .min(10, 'Mobile number must be at least 10 digits')
+    .max(10, 'Mobile number must be at most 10 digits'),
   email: z.email('Invalid email address')
 })
 
