@@ -1,6 +1,6 @@
-import { Button } from '@mantine/core'
+import { ActionIcon } from '@mantine/core'
 import { ArrowLeftIcon } from '@phosphor-icons/react'
-import { Link } from '@tanstack/react-router'
+import { useRouter } from '@tanstack/react-router'
 import { type FC, type ReactElement } from 'react'
 
 interface WorkspaceHeaderProps {
@@ -14,16 +14,27 @@ const WorkspaceHeader: FC<WorkspaceHeaderProps> = ({
   title = '',
   subtitle = ''
 }): ReactElement => {
+  const router = useRouter()
+
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      router.history.back()
+    } else {
+      router.navigate({ to: '/workspaces/sign-in' })
+    }
+  }
+
   return (
     <div className="flex items-center w-full gap-5">
-      <Button
-        variant={'secondary'}
-        className="rounded-full w-10 h-10 cursor-pointer"
+      <ActionIcon
+        variant="default"
+        size={40}
+        radius="xl"
+        onClick={handleBack}
+        aria-label="Go back"
       >
-        <Link to={'/workspaces/sign-in'}>
-          <ArrowLeftIcon />
-        </Link>
-      </Button>
+        <ArrowLeftIcon />
+      </ActionIcon>
 
       {/* Show title only if the showTitle prop is true */}
       {showTitle && (
