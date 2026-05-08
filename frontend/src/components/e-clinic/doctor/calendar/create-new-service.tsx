@@ -100,7 +100,13 @@ const serviceSchema = z.object({
   serviceName: z.string().min(1, 'Service name is required'),
   type: z.enum(['in-clinic', 'video']),
   paymentSettings: z.enum(['pre-paid', 'post-consultation']),
-  price: z.string().optional(),
+  price: z
+    .string()
+    .optional()
+    .refine(
+      (v) => !v || (/^\d+(\.\d{1,2})?$/.test(v) && parseFloat(v) > 0),
+      'Price must be a positive number with up to 2 decimal places'
+    ),
   duration: z.string().min(1, 'Duration is required'),
   followup_validity: z.string().min(1, 'Duration is required').optional(),
   nickname: z.string().optional(),

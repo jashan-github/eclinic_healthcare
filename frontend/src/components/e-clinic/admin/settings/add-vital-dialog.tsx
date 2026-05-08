@@ -5,6 +5,9 @@ import Modal from '@/components/ui/modal'
 import FormInput from '@/components/ui/form-input'
 import Button from '@/components/ui/button'
 import { Loader } from '@mantine/core'
+import { toast } from 'react-toastify'
+
+const VITAL_LIMITS = { name: 255, unit: 50, data_type: 50 } as const
 
 interface AddVitalDialogProps {
   isOpen: boolean
@@ -54,10 +57,31 @@ const AddVitalDialog: React.FC<AddVitalDialogProps> = ({ isOpen, onClose, vitalI
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
+    const name = formData.name.trim()
+    const unit = formData.unit.trim()
+    const dataType = formData.data_type.trim() || 'number'
+
+    if (!name) {
+      toast.error('Vital name is required')
+      return
+    }
+    if (name.length > VITAL_LIMITS.name) {
+      toast.error(`Name must be ${VITAL_LIMITS.name} characters or fewer`)
+      return
+    }
+    if (unit.length > VITAL_LIMITS.unit) {
+      toast.error(`Unit must be ${VITAL_LIMITS.unit} characters or fewer`)
+      return
+    }
+    if (dataType.length > VITAL_LIMITS.data_type) {
+      toast.error(`Data type must be ${VITAL_LIMITS.data_type} characters or fewer`)
+      return
+    }
+
     const payload = {
-      name: formData.name.trim(),
-      unit: formData.unit.trim(),
-      data_type: formData.data_type.trim() || 'number',
+      name,
+      unit,
+      data_type: dataType,
       is_active: formData.is_active,
     }
 
@@ -115,6 +139,7 @@ const AddVitalDialog: React.FC<AddVitalDialogProps> = ({ isOpen, onClose, vitalI
             name="name"
             value={formData.name}
             onChange={handleChange}
+            maxLength={VITAL_LIMITS.name}
             required
           />
 
@@ -124,6 +149,7 @@ const AddVitalDialog: React.FC<AddVitalDialogProps> = ({ isOpen, onClose, vitalI
             name="unit"
             value={formData.unit}
             onChange={handleChange}
+            maxLength={VITAL_LIMITS.unit}
           />
 
           {/* Data Type as free text input */}
@@ -133,6 +159,7 @@ const AddVitalDialog: React.FC<AddVitalDialogProps> = ({ isOpen, onClose, vitalI
             name="data_type"
             value={formData.data_type}
             onChange={handleChange}
+            maxLength={VITAL_LIMITS.data_type}
             placeholder="e.g., number, text, select"
             required
           />
