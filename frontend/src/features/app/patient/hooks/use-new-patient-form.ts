@@ -11,13 +11,31 @@ const schema = z.object({
   first_name: z.string().min(1, 'First name is required'),
   middle_name: z.string().optional(),
   last_name: z.string().optional(),
-  age: z.string().optional(),
-  dob: z.string().optional(),
-  gender: z.enum(['Male', 'Female', 'Other']),
+  age: z
+    .string()
+    .regex(/^\d{1,3}$/, 'Age must be a number')
+    .or(z.literal(''))
+    .optional(),
+  dob: z
+    .string()
+    .refine(
+      (v) => {
+        if (!v) return true
+        const d = new Date(v)
+        return !Number.isNaN(d.getTime()) && d.getTime() <= Date.now()
+      },
+      { message: 'Date of birth must be a valid date in the past' }
+    )
+    .optional(),
+  gender: z.enum(['male', 'female', 'other']),
   uhid: z.string().min(1, 'UHID is required'),
-  address: z.string().min(1, 'Address is required').optional(),
-  city: z.string().min(1, 'City is required').optional(),
-  pincode: z.string().length(6, 'Pincode must be 6 digits').optional(),
+  address: z.string().min(1, 'Address is required').or(z.literal('')).optional(),
+  city: z.string().min(1, 'City is required').or(z.literal('')).optional(),
+  pincode: z
+    .string()
+    .length(6, 'Pincode must be 6 digits')
+    .or(z.literal(''))
+    .optional(),
   relationship_with_patient: z.string().optional(),
   blood_group: z.string().optional(),
   referred_by_doctor: z.string().optional(),
@@ -28,18 +46,22 @@ const schema = z.object({
   religion: z.string().optional(),
   marital_status: z.string().optional(),
   preferred_language: z.string().optional(),
-  email: z.string().optional()
+  email: z
+    .string()
+    .email('Please enter a valid email address')
+    .or(z.literal(''))
+    .optional()
 })
 
 const defaultValues = {
   phone: '',
-  salutation: 'Mr',
+  salutation: 'Mr' as 'Mr' | 'Ms' | 'Mrs' | 'Dr' | 'Other',
   first_name: '',
   middle_name: '',
   last_name: '',
   age: '',
   dob: '',
-  gender: 'Male' as 'Male' | 'Female' | 'Other',
+  gender: 'male' as 'male' | 'female' | 'other',
   uhid: '',
   address: '',
   city: '',
@@ -75,13 +97,15 @@ export const useNewPatientForm = ({
       onSubmit: ({ value }) => {
         const result = schema.safeParse(value)
         if (!result.success) {
-          return { errors: result.error.flatten().fieldErrors }
+          // TanStack Form v1 expects { fields: { fieldName: error } } so each
+          // <form.Field> reads its own error via state.meta.errors.
+          return { fields: result.error.flatten().fieldErrors }
         }
-        return undefined // No errors
+        return undefined
       }
     },
-    onSubmit: async ({ value }) => {
-      console.log('Form submitted', value)
+    onSubmit: async () => {
+      // submission handled by the consuming component
     }
   })
 

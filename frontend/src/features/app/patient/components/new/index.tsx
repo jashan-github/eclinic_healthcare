@@ -111,7 +111,6 @@ const NewPatientForm: FC<NewPatientFormProps> = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       })
-      console.log('Patient data sent:', payload)
     } catch (error) {
       console.error('Error submitting patient data:', error)
     }
@@ -243,22 +242,22 @@ const NewPatientForm: FC<NewPatientFormProps> = ({
                   label="Gender"
                   value={state.value}
                   onChange={(value) =>
-                    handleChange(value as 'Male' | 'Female' | 'Other')
+                    handleChange(value as 'male' | 'female' | 'other')
                   }
                   error={state.meta.errors.join(', ')}
                   withAsterisk
                 >
                   <Group>
                     <Radio
-                      value="Male"
+                      value="male"
                       label="Male"
                     />
                     <Radio
-                      value="Female"
+                      value="female"
                       label="Female"
                     />
                     <Radio
-                      value="Other"
+                      value="other"
                       label="Other"
                     />
                   </Group>
