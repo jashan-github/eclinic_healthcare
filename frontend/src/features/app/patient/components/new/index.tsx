@@ -19,11 +19,12 @@ import {
   TextInput,
   Title
 } from '@mantine/core'
-import { GearSixIcon, PhoneIcon, PlusIcon } from '@phosphor-icons/react'
+import { GearSixIcon, PhoneIcon } from '@phosphor-icons/react'
 import { useMemo, type FC, type ReactElement } from 'react'
 import { usePatientFields } from '../../hooks/use-patient-fields'
 import { usePatientMedicalHistory } from '../../hooks/use-patient-medical-history'
 import { useNewPatientForm } from '../../hooks/use-new-patient-form'
+import { countryCodes } from '@/lib/country-codes'
 
 interface NewPatientFormProps {
   openConfigureModal: (val: boolean) => void
@@ -111,7 +112,6 @@ const NewPatientForm: FC<NewPatientFormProps> = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       })
-      console.log('Patient data sent:', payload)
     } catch (error) {
       console.error('Error submitting patient data:', error)
     }
@@ -130,12 +130,23 @@ const NewPatientForm: FC<NewPatientFormProps> = ({
         <Stack gap={2}>
           <CustomFieldLabel label="Phone Number" />
           <Grid gutter={'md'}>
-            <Grid.Col span={1}>
-              <TextInput
-                disabled
-                leftSection={<PlusIcon color="#bbb" />}
-                value={'91'}
-              />
+            <Grid.Col span={2}>
+              <form.Field name="country_code">
+                {({ state, handleChange }) => (
+                  <Select
+                    value={state.value}
+                    onChange={(value) => handleChange(value || '91')}
+                    data={countryCodes.map((c) => ({
+                      value: c.value,
+                      label: c.label
+                    }))}
+                    searchable
+                    nothingFoundMessage="No country found"
+                    error={state.meta.errors.join(', ')}
+                    withAsterisk
+                  />
+                )}
+              </form.Field>
             </Grid.Col>
             <Grid.Col span={3}>
               <form.Field name="phone">
@@ -243,22 +254,22 @@ const NewPatientForm: FC<NewPatientFormProps> = ({
                   label="Gender"
                   value={state.value}
                   onChange={(value) =>
-                    handleChange(value as 'Male' | 'Female' | 'Other')
+                    handleChange(value as 'male' | 'female' | 'other')
                   }
                   error={state.meta.errors.join(', ')}
                   withAsterisk
                 >
                   <Group>
                     <Radio
-                      value="Male"
+                      value="male"
                       label="Male"
                     />
                     <Radio
-                      value="Female"
+                      value="female"
                       label="Female"
                     />
                     <Radio
-                      value="Other"
+                      value="other"
                       label="Other"
                     />
                   </Group>
