@@ -18,20 +18,6 @@ const VisitsSidebar: FC<VisitsSidebarProps> = ({
   selectedClinicId,
   onClinicChange,
 }) => {
-  if (!visits.length) {
-    return (
-      <div className="w-[500px] flex flex-col gap-sm px-2">
-        <div className="min-h-[100px] flex items-center justify-center">
-          <div className="flex gap-xs text-gray-800">
-            <CalendarBlankIcon size={20} weight="bold" />
-            <div className="font-semibold text-sm">No upcoming visits to show</div>
-          </div>
-        </div>
-        <hr className="text-gray-200" />
-      </div>
-    )
-  }
-
   const { data: rxTemplatesData, isLoading } = useRxTemplates()
 
   // Auto-select first clinic when templates are loaded
@@ -39,7 +25,6 @@ const VisitsSidebar: FC<VisitsSidebarProps> = ({
     if (rxTemplatesData?.data.templates.length && !selectedClinicId) {
       const firstClinicId = rxTemplatesData.data.templates[0].clinic_location_id
       onClinicChange(firstClinicId)
-      console.log("Auto-selected clinic ID:", firstClinicId)
     }
   }, [rxTemplatesData?.data.templates, selectedClinicId, onClinicChange])
 
@@ -62,6 +47,20 @@ const VisitsSidebar: FC<VisitsSidebarProps> = ({
       label: c.name,
     }))
   }, [rxTemplatesData?.data.templates])
+
+  if (!visits.length) {
+    return (
+      <div className="w-[500px] flex flex-col gap-sm px-2">
+        <div className="min-h-[100px] flex items-center justify-center">
+          <div className="flex gap-xs text-gray-800">
+            <CalendarBlankIcon size={20} weight="bold" />
+            <div className="font-semibold text-sm">No upcoming visits to show</div>
+          </div>
+        </div>
+        <hr className="text-gray-200" />
+      </div>
+    )
+  }
 
   // Group visits by month/year
   const groupedVisits = visits.reduce((groups, visit) => {

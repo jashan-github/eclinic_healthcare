@@ -93,10 +93,40 @@ export default function WebinarDialog({
             return
         }
 
+        // Block past dates
+        const today = new Date().toISOString().split('T')[0]
+        if (date < today) {
+            toast.error('Webinar date cannot be in the past')
+            return
+        }
+
+        // Block inverted time range
+        if (endTime <= startTime) {
+            toast.error('End time must be after start time')
+            return
+        }
+
         // Format time to HH:MM (remove seconds if present)
         const formatTime = (time: string) => {
             const parts = time.split(':')
             return `${parts[0]}:${parts[1]}`
+        }
+
+        // Guard numeric parsing — backend rejects 0 / NaN
+        let priceValue = 0
+        if (webinarType === 'paid') {
+            const parsedPrice = parseFloat(price)
+            if (!Number.isFinite(parsedPrice) || parsedPrice <= 0) {
+                toast.error('Please enter a valid price greater than 0')
+                return
+            }
+            priceValue = parsedPrice
+        }
+
+        const parsedLimit = parseInt(participantLimit, 10)
+        if (!Number.isFinite(parsedLimit) || parsedLimit <= 0) {
+            toast.error('Please enter a valid participant limit')
+            return
         }
 
         const payload: CreateWebinarPayload = {
@@ -106,8 +136,8 @@ export default function WebinarDialog({
             start_time: formatTime(startTime),
             end_time: formatTime(endTime),
             pricing_type: webinarType,
-            price: webinarType === 'paid' ? parseFloat(price) || 0 : 0,
-            participant_limit: parseInt(participantLimit),
+            price: priceValue,
+            participant_limit: parsedLimit,
             host_id: selectedDoctor,
             visibility,
             agenda,
@@ -137,7 +167,7 @@ export default function WebinarDialog({
             <button
                 type="button"
                 onClick={handleSubmit}
-                disabled={!title || !date || !startTime || !endTime || !selectedDoctor || isPending}
+                disabled={!title || !description || !date || !startTime || !endTime || !selectedDoctor || isPending}
                 className="w-full px-8 py-3 rounded-md bg-[#002FD4] text-white font-poppins font-bold text-sm hover:bg-[#001FB8] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
                 {isPending ? 'Creating...' : 'Publish'}
@@ -165,7 +195,7 @@ export default function WebinarDialog({
                 <div className="grid grid-cols-3 gap-4">
                     <div className="relative">
                         <label className="font-poppins font-normal text-xs text-[#0F1011] mb-1 block">Date</label>
-                        <input type="date" placeholder='Date' value={date} onChange={(e) => setDate(e.target.value)}
+                        <input type="date" placeholder='Date' value={date} min={new Date().toISOString().split('T')[0]} onChange={(e) => setDate(e.target.value)}
                             className="text-[#6B7280] font-poppins font-semibold text-sm text-[#0F1011] align-middle w-full px-4 py-3 rounded-md border border-[#E6E7EB] focus:outline-none focus:border-[#002FD4]" />
                     </div>
                     <div className="relative">

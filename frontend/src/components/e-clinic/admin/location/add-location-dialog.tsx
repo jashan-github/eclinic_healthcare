@@ -11,8 +11,6 @@ interface AddLocationDialogProps {
 }
 
 const AddLocationDialog: React.FC<AddLocationDialogProps> = ({ isOpen, onClose }) => {
-    if (!isOpen) return null
-
     const [selectedCountryId, setSelectedCountryId] = useState('')
     const [selectedStateId, setSelectedStateId] = useState('')
     const [selectedCityId, setSelectedCityId] = useState('')
@@ -39,6 +37,8 @@ const AddLocationDialog: React.FC<AddLocationDialogProps> = ({ isOpen, onClose }
         email: '',
         isPrimary: false,
     })
+
+    if (!isOpen) return null
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({
@@ -237,11 +237,12 @@ const AddLocationDialog: React.FC<AddLocationDialogProps> = ({ isOpen, onClose }
                             <div>
                                 <label className="font-poppins text-sm text-[#0F1011] block mb-2">Phone</label>
                                 <input
-                                    type="number"
+                                    type="tel"
+                                    inputMode="tel"
                                     name="phone"
                                     value={formData.phone}
                                     onChange={handleChange}
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-md [appearance:textfield] [&::-webkit-outer-spin-button]:hidden [&::-webkit-inner-spin-button]:hidden"
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-md"
                                 />
                             </div>
                             <div>

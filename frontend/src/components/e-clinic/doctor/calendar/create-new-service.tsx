@@ -137,7 +137,6 @@ const CreateNewService: FC<CreateNewServiceProps> = ({
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false)
 
   const { user } = useAuth()
-  console.log(user, 136)
   const roleFromStorage = localStorage.getItem('role')
   const userRole = (user?.role || roleFromStorage || 'doctor').toLowerCase()
   const isAdmin = userRole === 'super_admin' || userRole === 'clinic_admin'

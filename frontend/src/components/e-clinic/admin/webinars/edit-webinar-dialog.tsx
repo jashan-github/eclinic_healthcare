@@ -112,10 +112,33 @@ export default function EditWebinarDialog({
             return
         }
 
+        // Block inverted time range
+        if (endTime <= startTime) {
+            toast.error('End time must be after start time')
+            return
+        }
+
         // Format time to HH:MM (remove seconds if present)
         const formatTime = (time: string) => {
             const parts = time.split(':')
             return `${parts[0]}:${parts[1]}`
+        }
+
+        // Guard numeric parsing — backend rejects 0 / NaN
+        let priceValue = 0
+        if (webinarType === 'paid') {
+            const parsedPrice = parseFloat(price)
+            if (!Number.isFinite(parsedPrice) || parsedPrice <= 0) {
+                toast.error('Please enter a valid price greater than 0')
+                return
+            }
+            priceValue = parsedPrice
+        }
+
+        const parsedLimit = parseInt(participantLimit, 10)
+        if (!Number.isFinite(parsedLimit) || parsedLimit <= 0) {
+            toast.error('Please enter a valid participant limit')
+            return
         }
 
         const payload: UpdateWebinarPayload = {
@@ -125,8 +148,8 @@ export default function EditWebinarDialog({
             start_time: formatTime(startTime),
             end_time: formatTime(endTime),
             pricing_type: webinarType,
-            price: webinarType === 'paid' ? parseFloat(price) || 0 : 0,
-            participant_limit: parseInt(participantLimit),
+            price: priceValue,
+            participant_limit: parsedLimit,
             host_id: selectedDoctor,
             visibility,
             agenda,
@@ -159,7 +182,7 @@ export default function EditWebinarDialog({
             <button
                 type="button"
                 onClick={handleSubmit}
-                disabled={!title || !date || !startTime || !endTime || !selectedDoctor || isPending}
+                disabled={!title || !description || !date || !startTime || !endTime || !selectedDoctor || isPending}
                 className="w-full px-8 py-3 rounded-md bg-[#002FD4] text-white font-poppins font-bold text-sm hover:bg-[#001FB8] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
                 {isPending ? 'Updating...' : 'Update'}
