@@ -1,6 +1,8 @@
 import { XIcon, CalendarBlankIcon } from '@phosphor-icons/react'
 import { type FC, useState } from 'react'
 
+const MAX_REASON_LENGTH = 500
+
 interface RequestDialogProps {
     open: boolean
     requestId: string
@@ -53,8 +55,6 @@ const RequestDialog: FC<RequestDialogProps> = ({
     const [selectedWaiverPercent, setSelectedWaiverPercent] = useState<number>(0)
 
     if (!open) return null
-
-    const MAX_REASON_LENGTH = 500
 
     const handleAction = () => {
         if (mode === 'approve' && onApprove) {

@@ -108,13 +108,14 @@ const EditServiceModal: FC<EditServiceModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    const priceValue = parseFloat(price)
-    if (!Number.isFinite(priceValue) || priceValue <= 0) {
-      toast.error('Price must be greater than 0')
+    const trimmedPrice = price.trim()
+    const priceValue = parseFloat(trimmedPrice)
+    if (!/^\d+(\.\d{1,2})?$/.test(trimmedPrice)) {
+      toast.error('Enter a valid price (up to 2 decimal places)')
       return
     }
-    if (!/^\d+(\.\d{1,2})?$/.test(price.trim())) {
-      toast.error('Price can have at most 2 decimal places')
+    if (!Number.isFinite(priceValue) || priceValue <= 0) {
+      toast.error('Price must be greater than 0')
       return
     }
 

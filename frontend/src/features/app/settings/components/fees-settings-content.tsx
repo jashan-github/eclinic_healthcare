@@ -42,13 +42,14 @@ const FeesSettingsContent: FC = (): ReactElement => {
   }
 
   const saveEdit = (service: typeof services[0]) => {
-    const price = Number(editPrice)
-    if (!Number.isFinite(price) || price <= 0) {
-      toast.error('Price must be greater than 0')
+    const trimmedPrice = editPrice.trim()
+    const price = Number(trimmedPrice)
+    if (!/^\d+(\.\d{1,2})?$/.test(trimmedPrice)) {
+      toast.error('Enter a valid price (up to 2 decimal places)')
       return
     }
-    if (!/^\d+(\.\d{1,2})?$/.test(editPrice.trim())) {
-      toast.error('Price can have at most 2 decimal places')
+    if (!Number.isFinite(price) || price <= 0) {
+      toast.error('Price must be greater than 0')
       return
     }
 

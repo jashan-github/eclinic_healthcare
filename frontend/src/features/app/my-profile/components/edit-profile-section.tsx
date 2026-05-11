@@ -5,6 +5,11 @@ import { useLanguages } from "@/hooks/use-languages";
 import { useSpecializations } from "../hooks/use-specializations";
 import { toast } from "react-toastify";
 
+const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024 // 5 MB
+const MAX_ABOUT_LENGTH = 2000
+const MAX_NAME_LENGTH = 255
+const PHONE_REGEX = /^\d{10}$/
+
 const EditProfileSection = () => {
   const { myProfile, updateProfile, isUpdatingProfile } = useMyProfile();
   const { languages } = useLanguages();
@@ -70,11 +75,6 @@ const EditProfileSection = () => {
       setPreviewImage(myProfile.profile_img || myProfile.profile_img_url || null);
     }
   }, [myProfile]);
-
-  const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024 // 5 MB
-  const MAX_ABOUT_LENGTH = 2000
-  const MAX_NAME_LENGTH = 255
-  const PHONE_REGEX = /^\d{10}$/
 
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
   const [showSpecializationDropdown, setShowSpecializationDropdown] = useState(false);
