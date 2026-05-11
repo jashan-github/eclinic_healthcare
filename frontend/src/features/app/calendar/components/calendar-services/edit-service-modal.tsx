@@ -109,8 +109,12 @@ const EditServiceModal: FC<EditServiceModalProps> = ({
     e.preventDefault()
 
     const priceValue = parseFloat(price)
-    if (isNaN(priceValue) || priceValue < 0) {
-      toast.error('Please enter a valid price')
+    if (!Number.isFinite(priceValue) || priceValue <= 0) {
+      toast.error('Price must be greater than 0')
+      return
+    }
+    if (!/^\d+(\.\d{1,2})?$/.test(price.trim())) {
+      toast.error('Price can have at most 2 decimal places')
       return
     }
 
@@ -191,7 +195,7 @@ const EditServiceModal: FC<EditServiceModalProps> = ({
               value={price}
               onChange={(e) => setPrice(e.target.value)}
               type="number"
-              min="0"
+              min="0.01"
               step="0.01"
             />
           </Stack>

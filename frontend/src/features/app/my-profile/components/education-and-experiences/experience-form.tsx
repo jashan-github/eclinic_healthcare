@@ -9,13 +9,33 @@ import { yearsListTillCurrentYear } from '@/utils/year-list'
 import { zodResolver } from 'mantine-form-zod-resolver'
 import { toast } from 'react-toastify'
 
-const formSchema = z.object({
-  id: z.string().optional(),
-  title: z.string().min(2).max(100),
-  clinic_hospital_name: z.string().min(2).max(100), // Fixed length(4) to min(2).max(100) for consistency
-  start_from: z.string().length(4, 'Select a valid year'),
-  end_year: z.string().length(4, 'Select a valid year')
-})
+const formSchema = z
+  .object({
+    id: z.string().optional(),
+    title: z.string().min(2).max(100),
+    clinic_hospital_name: z.string().min(2).max(100),
+    start_from: z
+      .string()
+      .regex(/^\d{4}$/, 'Select a valid year')
+      .refine(
+        (v) => parseInt(v, 10) <= new Date().getFullYear(),
+        'Start year cannot be in the future'
+      ),
+    end_year: z
+      .string()
+      .regex(/^\d{4}$/, 'Select a valid year')
+      .refine(
+        (v) => parseInt(v, 10) <= new Date().getFullYear(),
+        'End year cannot be in the future'
+      )
+  })
+  .refine(
+    (data) => parseInt(data.end_year, 10) >= parseInt(data.start_from, 10),
+    {
+      message: 'End year must be on or after start year',
+      path: ['end_year']
+    }
+  )
 
 const ExperienceForm: FC = (): ReactElement => {
   const { isSaving, isUpdating, saveExperience, updateExperience } =

@@ -43,7 +43,14 @@ const FeesSettingsContent: FC = (): ReactElement => {
 
   const saveEdit = (service: typeof services[0]) => {
     const price = Number(editPrice)
-    if (isNaN(price) || price < 0) return
+    if (!Number.isFinite(price) || price <= 0) {
+      toast.error('Price must be greater than 0')
+      return
+    }
+    if (!/^\d+(\.\d{1,2})?$/.test(editPrice.trim())) {
+      toast.error('Price can have at most 2 decimal places')
+      return
+    }
 
     updateFee(
       { id: service.id, data: { price, status: service.status } },

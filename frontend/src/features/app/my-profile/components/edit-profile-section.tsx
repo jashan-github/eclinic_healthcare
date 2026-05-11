@@ -34,14 +34,20 @@ const EditProfileSection = () => {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setSelectedImageFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreviewImage(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    if (file.size > MAX_IMAGE_SIZE_BYTES) {
+      toast.error('Profile image must be 5 MB or smaller');
+      e.target.value = ''; // clear the file input so the same file can be re-selected after shrinking
+      return;
     }
+
+    setSelectedImageFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPreviewImage(reader.result as string);
+    };
+    reader.readAsDataURL(file);
   };
 
   // Pre-fill form correctly from backend data
@@ -61,10 +67,14 @@ const EditProfileSection = () => {
         specializations: myProfile.specializations?.map((s: any) => s.id || s) || [],
         languages: myProfile.languages?.map((l: any) => l.id || l) || [],
       });
-      console.log(myProfile)
       setPreviewImage(myProfile.profile_img || myProfile.profile_img_url || null);
     }
   }, [myProfile]);
+
+  const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024 // 5 MB
+  const MAX_ABOUT_LENGTH = 2000
+  const MAX_NAME_LENGTH = 255
+  const PHONE_REGEX = /^\d{10}$/
 
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
   const [showSpecializationDropdown, setShowSpecializationDropdown] = useState(false);
@@ -104,16 +114,43 @@ const EditProfileSection = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    const firstName = formData.firstName.trim();
+    const lastName = formData.lastName.trim();
+    const middleName = formData.middleName.trim();
+    const phone = formData.contactNumber.trim();
+    const about = formData.about;
+
+    if (firstName.length < 1 || firstName.length > MAX_NAME_LENGTH) {
+      toast.error(`First name must be 1-${MAX_NAME_LENGTH} characters`);
+      return;
+    }
+    if (lastName.length < 1 || lastName.length > MAX_NAME_LENGTH) {
+      toast.error(`Last name must be 1-${MAX_NAME_LENGTH} characters`);
+      return;
+    }
+    if (middleName && middleName.length > MAX_NAME_LENGTH) {
+      toast.error(`Middle name must not exceed ${MAX_NAME_LENGTH} characters`);
+      return;
+    }
+    if (phone && !PHONE_REGEX.test(phone)) {
+      toast.error('Phone number must be exactly 10 digits');
+      return;
+    }
+    if (about.length > MAX_ABOUT_LENGTH) {
+      toast.error(`About must be ${MAX_ABOUT_LENGTH} characters or fewer`);
+      return;
+    }
+
     const payload = {
-      first_name: formData.firstName,
-      middle_name: formData.middleName || "", // optional, empty string if not filled
-      last_name: formData.lastName,
-      phone_number: formData.contactNumber,
+      first_name: firstName,
+      middle_name: middleName, // empty string if not filled
+      last_name: lastName,
+      phone_number: phone,
       email: formData.email,
       dob: formData.dateOfBirth,
       years_of_experience: formData.years_of_experience,
       education: formData.education,
-      about: formData.about,
+      about,
       specializations: formData.specializations,
       languages: formData.languages,
       profile_img: selectedImageFile || undefined,
@@ -167,22 +204,22 @@ const EditProfileSection = () => {
         <div className="grid grid-cols-2 gap-6">
           <div>
             <label className="block mb-1 font-poppins font-medium text-[14px] text-[#545D69]">First Name</label>
-            <input type="text" value={formData.firstName} onChange={e => setFormData({ ...formData, firstName: e.target.value })} className={inputClass} />
+            <input type="text" value={formData.firstName} onChange={e => setFormData({ ...formData, firstName: e.target.value })} maxLength={MAX_NAME_LENGTH} className={inputClass} />
           </div>
 
           <div>
             <label className="block mb-1 font-poppins font-medium text-[14px] text-[#545D69]">Middle Name (Optional)</label>
-            <input type="text" value={formData.middleName} onChange={e => setFormData({ ...formData, middleName: e.target.value })} className={inputClass} />
+            <input type="text" value={formData.middleName} onChange={e => setFormData({ ...formData, middleName: e.target.value })} maxLength={MAX_NAME_LENGTH} className={inputClass} />
           </div>
 
           <div>
             <label className="block mb-1 font-poppins font-medium text-[14px] text-[#545D69]">Last Name</label>
-            <input type="text" value={formData.lastName} onChange={e => setFormData({ ...formData, lastName: e.target.value })} className={inputClass} />
+            <input type="text" value={formData.lastName} onChange={e => setFormData({ ...formData, lastName: e.target.value })} maxLength={MAX_NAME_LENGTH} className={inputClass} />
           </div>
 
           <div>
             <label className="block mb-1 font-poppins font-medium text-[14px] text-[#545D69]">Contact Number</label>
-            <input type="tel" value={formData.contactNumber} onChange={e => setFormData({ ...formData, contactNumber: e.target.value })} placeholder="9876543210" className={inputClass} />
+            <input type="tel" inputMode="numeric" pattern="\d{10}" maxLength={10} value={formData.contactNumber} onChange={e => setFormData({ ...formData, contactNumber: e.target.value.replace(/\D/g, '') })} placeholder="9876543210" className={inputClass} />
           </div>
 
           <div>
@@ -260,8 +297,12 @@ const EditProfileSection = () => {
             onChange={e => setFormData({ ...formData, about: e.target.value })}
             placeholder="Experienced cardiologist with 10+ years of practice..."
             rows={5}
+            maxLength={MAX_ABOUT_LENGTH}
             className={`${inputClass} resize-none`}
           />
+          <div className="text-xs text-gray-400 mt-1 text-right">
+            {formData.about.length}/{MAX_ABOUT_LENGTH}
+          </div>
         </div>
 
         {/* Save Button */}
