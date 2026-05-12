@@ -14,8 +14,16 @@ import { useRegistrationStore } from '../../../stores/use-registration-store'
 const formSchema = z.object({
   id: z.string().optional(),
   registration_number: z.string().min(2).max(100),
-  registration_council: z.string().min(2).max(100),
-  registration_year: z.string().length(4, 'Select a valid year')
+  // UI is a Select bound to medical-council UUIDs; enforce that shape here so
+  // free-text or empty values can't reach the backend.
+  registration_council: z.uuid('Please select a valid council'),
+  registration_year: z
+    .string()
+    .regex(/^\d{4}$/, 'Select a valid year')
+    .refine(
+      (v) => parseInt(v, 10) <= new Date().getFullYear(),
+      'Year cannot be in the future'
+    )
 })
 
 const RegistrationForm: FC = (): ReactElement => {
@@ -49,7 +57,11 @@ const RegistrationForm: FC = (): ReactElement => {
 
   const handleEditRegistration = (data: Registration) => {
     const registrationId = registrationForm.values.id
-    if (!registrationId) return
+    if (!registrationId) {
+      console.error('handleEditRegistration called without a registrationId')
+      toast.error('Unable to update — please refresh and try again')
+      return
+    }
 
     updateRegistration(
       { registrationId, data },

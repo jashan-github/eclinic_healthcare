@@ -1,6 +1,8 @@
 import { XIcon, CalendarBlankIcon } from '@phosphor-icons/react'
 import { type FC, useState } from 'react'
 
+const MAX_REASON_LENGTH = 500
+
 interface RequestDialogProps {
     open: boolean
     requestId: string
@@ -57,8 +59,11 @@ const RequestDialog: FC<RequestDialogProps> = ({
     const handleAction = () => {
         if (mode === 'approve' && onApprove) {
             onApprove(selectedWaiverPercent)
-        } else if (mode === 'decline' && onDecline && declineReason.trim()) {
-            onDecline(declineReason.trim())
+        } else if (mode === 'decline' && onDecline) {
+            const trimmed = declineReason.trim()
+            if (!trimmed) return
+            if (trimmed.length > MAX_REASON_LENGTH) return
+            onDecline(trimmed)
         }
     }
 
@@ -132,16 +137,20 @@ const RequestDialog: FC<RequestDialogProps> = ({
                                     value={declineReason}
                                     onChange={(e) => setDeclineReason(e.target.value)}
                                     rows={3}
+                                    maxLength={MAX_REASON_LENGTH}
                                     placeholder="Type reason here..."
                                     className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#002FD4] font-poppins text-sm resize-none mt-1"
                                 />
+                                <div className="text-xs text-gray-400 mt-1 text-right">
+                                    {declineReason.length}/{MAX_REASON_LENGTH}
+                                </div>
                             </div>
                         )}
 
                         <div className="inline-flex gap-8 pt-3 w-full">
                             <button
                                 onClick={handleAction}
-                                disabled={mode === 'decline' && !declineReason.trim()}
+                                disabled={mode === 'decline' && (!declineReason.trim() || declineReason.trim().length > MAX_REASON_LENGTH)}
                                 className={`w-full py-2 ${mode === 'approve' ? 'bg-[#002FD4]' : 'bg-red-600'
                                     } text-white font-poppins font-medium text-sm rounded-md hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors`}
                             >

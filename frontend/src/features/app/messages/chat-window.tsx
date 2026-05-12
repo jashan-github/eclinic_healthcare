@@ -3,9 +3,12 @@
 import { Textarea } from "@mantine/core";
 import { PaperPlaneTiltIcon } from "@phosphor-icons/react";
 import { useState, useRef, useEffect } from "react";
+import { toast } from "react-toastify";
 import type { Message, User } from "./components/message-content";
 import { useChatEncryption } from "@/features/socket/use-chat-encryption";
 import { formatDateTime } from "@/utils/helper";
+
+const MAX_MESSAGE_LENGTH = 5000;
 
 interface ChatWindowProps {
   selectedUser: User | undefined;
@@ -42,8 +45,6 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     "room-secret-key",
   );
 
-  console.log(isConnected);
-
   const handleTyping = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setNewMessage(e.target.value);
     if (!selectedUser?.id) return;
@@ -54,7 +55,12 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   };
 
   const handleSend = async () => {
-    if (!newMessage.trim() || !selectedUser?.id) return;
+    const trimmed = newMessage.trim();
+    if (!trimmed || !selectedUser?.id) return;
+    if (trimmed.length > MAX_MESSAGE_LENGTH) {
+      toast.error(`Message is too long (max ${MAX_MESSAGE_LENGTH} characters)`);
+      return;
+    }
     const encrypted = await encryptMessage(newMessage);
     const success = sendMessage(encrypted);
     if (success) {
@@ -185,6 +191,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                   handleSend();
                 }
               }}
+              maxLength={MAX_MESSAGE_LENGTH}
               rows={1}
               autosize={false}
               radius="md"

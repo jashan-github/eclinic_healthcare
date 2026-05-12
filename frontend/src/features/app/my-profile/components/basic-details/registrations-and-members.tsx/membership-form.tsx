@@ -14,15 +14,30 @@ const formSchema = z
     id: z.string().optional(),
     organization_name: z
       .string()
+      .trim()
       .min(2, 'Organization name must be at least 2 characters')
       .max(100, 'Organization name must not exceed 100 characters'),
-    member_from: z.string().length(4, 'Select a valid year'),
-    member_till: z.string().length(4, 'Select a valid year')
+    member_from: z
+      .string()
+      .regex(/^\d{4}$/, 'Select a valid year')
+      .refine(
+        (v) => parseInt(v, 10) <= new Date().getFullYear(),
+        'Member From year cannot be in the future'
+      ),
+    // member_till uses the future-allowing yearsList() because memberships can
+    // extend forward; only enforce the numeric shape here.
+    member_till: z.string().regex(/^\d{4}$/, 'Select a valid year')
   })
-  .refine((data) => parseInt(data.member_from) <= parseInt(data.member_till), {
-    message: 'Member From year must be less than or equal to Member To year',
-    path: ['member_till']
-  })
+  .refine(
+    (data) =>
+      Number.isFinite(parseInt(data.member_from, 10)) &&
+      Number.isFinite(parseInt(data.member_till, 10)) &&
+      parseInt(data.member_from, 10) <= parseInt(data.member_till, 10),
+    {
+      message: 'Member From year must be less than or equal to Member To year',
+      path: ['member_till']
+    }
+  )
 
 const MembershipForm: FC = (): ReactElement => {
   const { isSaving, isUpdating, saveMembership, updateMembership } =
@@ -53,7 +68,11 @@ const MembershipForm: FC = (): ReactElement => {
 
   const handleEditMembership = (data: Membership) => {
     const membershipId = membershipForm.values.id
-    if (!membershipId) return
+    if (!membershipId) {
+      console.error('handleEditMembership called without a membershipId')
+      toast.error('Unable to update — please refresh and try again')
+      return
+    }
 
     updateMembership(
       { membershipId, data },
@@ -107,7 +126,7 @@ const MembershipForm: FC = (): ReactElement => {
           loading={isSaving || isUpdating}
           type="submit"
         >
-          'Save'
+          {membership?.id ? 'Update' : 'Save'}
         </Button>
         <Button
           className="flex grow"

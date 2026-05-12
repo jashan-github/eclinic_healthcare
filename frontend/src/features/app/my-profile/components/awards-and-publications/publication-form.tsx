@@ -12,7 +12,13 @@ import { usePublicationsStore } from '../../stores/use-publications-store'
 const publicationFormSchema = z.object({
   id: z.string().optional(),
   name: z.string().min(2).max(100),
-  year: z.string().length(4, { message: 'Please select a valid year' }),
+  year: z
+    .string()
+    .regex(/^\d{4}$/, 'Please select a valid year')
+    .refine(
+      (v) => parseInt(v, 10) <= new Date().getFullYear(),
+      'Year cannot be in the future'
+    ),
   published_awarded_by: z.string().min(2).max(100)
 })
 
@@ -46,7 +52,11 @@ const PublicationForm: FC = (): ReactElement => {
 
   const handleEditPublication = (data: Publication) => {
     const publicationId = publicationForm.values.id
-    if (!publicationId) return
+    if (!publicationId) {
+      console.error('handleEditPublication called without a publicationId')
+      toast.error('Unable to update — please refresh and try again')
+      return
+    }
 
     updatePublication(
       { publicationId, data },

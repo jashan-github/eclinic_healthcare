@@ -12,8 +12,17 @@ import { useEducationsStore } from '../../stores/use-educations-store'
 const formSchema = z.object({
   id: z.string().optional(),
   university: z.string().min(2).max(100),
-  degree: z.string().min(2, 'Degree is required'),
-  year: z.string().regex(/^\d{4}$/, 'Enter a valid year (e.g., 2023)')
+  degree: z
+    .string()
+    .min(2, 'Degree must be at least 2 characters')
+    .max(100, 'Degree must not exceed 100 characters'),
+  year: z
+    .string()
+    .regex(/^\d{4}$/, 'Enter a valid year (e.g., 2023)')
+    .refine(
+      (v) => parseInt(v, 10) <= new Date().getFullYear(),
+      'Year cannot be in the future'
+    )
 })
 
 const EducationForm: FC = (): ReactElement => {
@@ -46,7 +55,11 @@ const EducationForm: FC = (): ReactElement => {
 
   const handleEditEducation = (data: Education) => {
     const educationId = educationForm.values.id
-    if (!educationId) return
+    if (!educationId) {
+      console.error('handleEditEducation called without an educationId')
+      toast.error('Unable to update — please refresh and try again')
+      return
+    }
 
     updateEducation(
       { educationId, data },
