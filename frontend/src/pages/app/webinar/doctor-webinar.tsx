@@ -1,22 +1,22 @@
 import WebinarContent from "@/components/e-clinic/doctor/webinars/webinar-content";
+import { ClockClockwiseIcon } from "@phosphor-icons/react";
 import { type FC, type ReactElement } from "react";
 
 const DoctorWebinar: FC = (): ReactElement => {
   return (
     <div className="bg-[#F4F6F9] w-full h-full px-6 py-8 overflow-auto">
-      <div className="flex w-full justify-between items-center mb-10">
+      <div className="flex w-full justify-between items-center mb-10 gap-4 flex-wrap">
         <div className="font-poppins font-medium text-lg leading-6 text-[#0F1011]">
-          Host and manage your webinars
+          Your webinars
         </div>
-        <div>
-          <button
-            className="w-[166px] h-10 opacity-10 rounded-md px-[13px] py-[9px] bg-[#002FD4]"
-            disabled={true}
-          >
-            <span className="font-poppins font-semibold text-sm leading-5 text-center text-white">
-              Host a webinar
-            </span>
-          </button>
+        <div
+          role="status"
+          className="flex items-center gap-2 rounded-md border border-[#E4E5ED] bg-white px-4 py-2"
+        >
+          <ClockClockwiseIcon size={16} weight="bold" className="text-[#002FD4]" />
+          <span className="font-poppins text-sm leading-5 text-[#475569]">
+            Webinar hosting is coming soon — contact your admin to schedule one.
+          </span>
         </div>
       </div>
       <div>
