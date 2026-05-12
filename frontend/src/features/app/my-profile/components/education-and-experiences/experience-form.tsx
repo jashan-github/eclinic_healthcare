@@ -1,4 +1,4 @@
-import { Button, Select, TextInput } from '@mantine/core'
+import { Button, Checkbox, Select, TextInput } from '@mantine/core'
 import { type FC, type ReactElement } from 'react'
 import { useForm } from '@mantine/form'
 import { z } from 'zod'
@@ -21,21 +21,39 @@ const formSchema = z
         (v) => parseInt(v, 10) <= new Date().getFullYear(),
         'Start year cannot be in the future'
       ),
-    end_year: z
-      .string()
-      .regex(/^\d{4}$/, 'Select a valid year')
-      .refine(
-        (v) => parseInt(v, 10) <= new Date().getFullYear(),
-        'End year cannot be in the future'
-      )
+    // When is_current=true, end_year is allowed to be empty (ongoing role).
+    end_year: z.string(),
+    is_current: z.boolean()
   })
-  .refine(
-    (data) => parseInt(data.end_year, 10) >= parseInt(data.start_from, 10),
-    {
-      message: 'End year must be on or after start year',
-      path: ['end_year']
+  .superRefine((data, ctx) => {
+    if (data.is_current) {
+      return // skip end_year validation entirely for ongoing roles
     }
-  )
+    if (!/^\d{4}$/.test(data.end_year)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Select a valid year',
+        path: ['end_year']
+      })
+      return
+    }
+    const endNum = parseInt(data.end_year, 10)
+    if (endNum > new Date().getFullYear()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'End year cannot be in the future',
+        path: ['end_year']
+      })
+      return
+    }
+    if (endNum < parseInt(data.start_from, 10)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'End year must be on or after start year',
+        path: ['end_year']
+      })
+    }
+  })
 
 const ExperienceForm: FC = (): ReactElement => {
   const { isSaving, isUpdating, saveExperience, updateExperience } =
@@ -50,7 +68,9 @@ const ExperienceForm: FC = (): ReactElement => {
       title: experience?.title || '',
       clinic_hospital_name: experience?.clinic_hospital_name || '',
       start_from: experience?.start_from || '',
-      end_year: experience?.end_year || ''
+      end_year: experience?.end_year || '',
+      // An existing record with no end_year is treated as currently-ongoing.
+      is_current: !!experience && !experience.end_year
     }
   })
 
@@ -88,11 +108,25 @@ const ExperienceForm: FC = (): ReactElement => {
     )
   }
 
+  const isCurrent = experienceForm.values.is_current
+
+  // Normalize the data on submit: an ongoing role must send an empty
+  // end_year so the backend recognizes it as the current position.
+  const handleSubmit = (values: z.infer<typeof formSchema>) => {
+    const payload: Experience = {
+      ...values,
+      end_year: values.is_current ? '' : values.end_year
+    } as Experience
+    if (values.id) {
+      handleEditExperience(payload)
+    } else {
+      handleAddExperience(payload)
+    }
+  }
+
   return (
     <form
-      onSubmit={experienceForm.onSubmit(
-        experienceForm.values.id ? handleEditExperience : handleAddExperience
-      )}
+      onSubmit={experienceForm.onSubmit(handleSubmit)}
       className="space-y-8"
     >
       <TextInput
@@ -118,11 +152,24 @@ const ExperienceForm: FC = (): ReactElement => {
         {...experienceForm.getInputProps('start_from')}
       />
 
+      <Checkbox
+        label="I currently work here"
+        {...experienceForm.getInputProps('is_current', { type: 'checkbox' })}
+        onChange={(e) => {
+          const checked = e.currentTarget.checked
+          experienceForm.setFieldValue('is_current', checked)
+          if (checked) {
+            experienceForm.setFieldValue('end_year', '')
+          }
+        }}
+      />
+
       <Select
         label="End Year"
-        placeholder="Select Year"
+        placeholder={isCurrent ? 'Ongoing' : 'Select Year'}
         data={yearsListTillCurrentYear().map((year) => year.toString())}
         classNames={{ input: 'orvo-base-input' }}
+        disabled={isCurrent}
         {...experienceForm.getInputProps('end_year')}
       />
 
