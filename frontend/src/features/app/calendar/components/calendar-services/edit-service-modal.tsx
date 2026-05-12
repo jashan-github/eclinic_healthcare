@@ -8,11 +8,29 @@ import {
   Stack,
   Text
 } from '@mantine/core'
-import { CurrencyDollarIcon } from '@phosphor-icons/react'
 import { useState, useEffect, type FC } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { updateDoctorServicePricing, createDoctorServicePricing, type UpdateDoctorServicePricingPayload, type CreateDoctorServicePricingPayload } from '@/services/weekly-schedule'
 import { toast } from 'react-toastify'
+
+// Curated currency list covering the markets the clinic serves.
+// Backend accepts any ISO-4217 code; this is just what we expose in the UI.
+const CURRENCY_OPTIONS = [
+  { value: 'USD', label: 'USD ($)', symbol: '$' },
+  { value: 'INR', label: 'INR (₹)', symbol: '₹' },
+  { value: 'EUR', label: 'EUR (€)', symbol: '€' },
+  { value: 'GBP', label: 'GBP (£)', symbol: '£' },
+  { value: 'AED', label: 'AED (د.إ)', symbol: 'د.إ' },
+  { value: 'CAD', label: 'CAD (C$)', symbol: 'C$' },
+  { value: 'AUD', label: 'AUD (A$)', symbol: 'A$' },
+  { value: 'SGD', label: 'SGD (S$)', symbol: 'S$' },
+  { value: 'JPY', label: 'JPY (¥)', symbol: '¥' },
+] as const
+
+type CurrencyCode = (typeof CURRENCY_OPTIONS)[number]['value']
+
+const getCurrencySymbol = (code: string): string =>
+  CURRENCY_OPTIONS.find((c) => c.value === code)?.symbol ?? code
 
 // Duration dropdown options
 const durationDropdownItems = [
@@ -55,7 +73,7 @@ const EditServiceModal: FC<EditServiceModalProps> = ({
   const [serviceMode, setServiceMode] = useState<'IN_CLINIC' | 'TELECONSULTATION'>('IN_CLINIC')
   const [price, setPrice] = useState<string>('')
   const [duration, setDuration] = useState<string>('30')
-  const [currency, setCurrency] = useState<'USD' | 'INR'>('USD')
+  const [currency, setCurrency] = useState<CurrencyCode>('USD')
 
   // Update form when service changes
   useEffect(() => {
@@ -63,7 +81,8 @@ const EditServiceModal: FC<EditServiceModalProps> = ({
       setServiceMode(service.service_mode === 'TELECONSULTATION' ? 'TELECONSULTATION' : 'IN_CLINIC')
       setPrice(String(service.amount || ''))
       setDuration(String(service.duration || '30'))
-      setCurrency(service.currency === 'INR' ? 'INR' : 'USD')
+      const known = CURRENCY_OPTIONS.find((c) => c.value === service.currency)
+      setCurrency(known ? (service.currency as CurrencyCode) : 'USD')
     }
   }, [service])
 
@@ -187,11 +206,23 @@ const EditServiceModal: FC<EditServiceModalProps> = ({
             </Radio.Group>
           </Stack>
 
+          {/* Currency */}
+          <Stack gap="sm">
+            <Text fw={600}>Currency</Text>
+            <Select
+              data={CURRENCY_OPTIONS.map((c) => ({ value: c.value, label: c.label }))}
+              value={currency}
+              onChange={(value) => setCurrency((value as CurrencyCode) || 'USD')}
+              searchable
+              allowDeselect={false}
+            />
+          </Stack>
+
           {/* Price */}
           <Stack gap="sm">
             <Text fw={600}>Price</Text>
             <Input
-              leftSection={currency === 'USD' ? <CurrencyDollarIcon /> : 'XCG'}
+              leftSection={<span className="text-sm">{getCurrencySymbol(currency)}</span>}
               placeholder="200"
               value={price}
               onChange={(e) => setPrice(e.target.value)}
