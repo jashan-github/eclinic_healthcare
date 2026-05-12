@@ -3,11 +3,12 @@ import type { AppointmentServiceDetail } from '@/types/calendar'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { deleteCalendarService, getCalendarServices } from '../services/calendar-services-service'
 
-export const useCalendarService = () => {
+export const useCalendarService = (enabled = true) => {
   const { data, isLoading, error } = useQuery<AppointmentServiceDetail[], Error>({
     queryKey: ['calendarServices'],
     queryFn: getCalendarServices,
-    staleTime: 1000 * 60 * 5
+    staleTime: 1000 * 60 * 5,
+    enabled
   })
 
   // No flattening needed - backend returns flat array
