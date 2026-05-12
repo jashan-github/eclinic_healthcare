@@ -4,6 +4,7 @@ import CalendarSchedule from '@/features/app/calendar/components/calender-schedu
 import ViewToggle from '@/features/app/calendar/components/view-toggle'
 import CalendarServices from '@/features/app/calendar/components/calendar-services'
 import CreateNewService from '@/components/e-clinic/doctor/calendar/create-new-service'
+import { useAuth } from '@/context/auth/auth-context-utils'
 import { Button, Card, Tabs } from '@mantine/core'
 import { ArrowLeftIcon, PlusIcon } from '@phosphor-icons/react'
 import { useState, type FC, type ReactElement } from 'react'
@@ -11,6 +12,12 @@ import { useState, type FC, type ReactElement } from 'react'
 const CalendarPage: FC = (): ReactElement => {
   const [activeTab, setActiveTab] = useState<string | null>('list')
   const [isOpen, setIsOpen] = useState(false)
+  const { user } = useAuth()
+  // Service creation currently calls admin-only endpoints
+  // (/v1/admin/service-types + /v1/admin/services). Hide the button for
+  // non-admins until backend exposes a doctor-scoped equivalent.
+  const userRole = (user?.role || localStorage.getItem('role') || '').toLowerCase()
+  const canCreateService = userRole === 'super_admin' || userRole === 'clinic_admin'
 
   return (
     <div className="h-screen overflow-hidden bg-[#F4F6F9]">
@@ -64,13 +71,18 @@ const CalendarPage: FC = (): ReactElement => {
           </div>
 
           <div className="flex items-center gap-4">
-            {activeTab === 'services' && (
+            {activeTab === 'services' && canCreateService && (
               <Button
                 leftSection={<PlusIcon size={16} weight="bold" />}
                 onClick={() => setIsOpen(true)}
               >
                 Create New Service
               </Button>
+            )}
+            {activeTab === 'services' && !canCreateService && (
+              <span className="font-poppins text-xs text-[#64748B] max-w-[260px] text-right">
+                Contact your admin to add new services.
+              </span>
             )}
             <ViewToggle
               value={activeTab === 'services' ? 'list' : (activeTab as 'list' | 'calendar')}
