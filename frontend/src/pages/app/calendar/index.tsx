@@ -4,8 +4,8 @@ import CalendarSchedule from '@/features/app/calendar/components/calender-schedu
 import ViewToggle from '@/features/app/calendar/components/view-toggle'
 import CalendarServices from '@/features/app/calendar/components/calendar-services'
 import CreateNewService from '@/components/e-clinic/doctor/calendar/create-new-service'
-import { Card, Tabs } from '@mantine/core'
-import { ArrowLeftIcon } from '@phosphor-icons/react'
+import { Button, Card, Tabs } from '@mantine/core'
+import { ArrowLeftIcon, PlusIcon } from '@phosphor-icons/react'
 import { useState, type FC, type ReactElement } from 'react'
 
 const CalendarPage: FC = (): ReactElement => {
@@ -64,6 +64,14 @@ const CalendarPage: FC = (): ReactElement => {
           </div>
 
           <div className="flex items-center gap-4">
+            {activeTab === 'services' && (
+              <Button
+                leftSection={<PlusIcon size={16} weight="bold" />}
+                onClick={() => setIsOpen(true)}
+              >
+                Create New Service
+              </Button>
+            )}
             <ViewToggle
               value={activeTab === 'services' ? 'list' : (activeTab as 'list' | 'calendar')}
               onChange={(v) => setActiveTab(v === 'list' || v === 'calendar' ? v : activeTab)}
