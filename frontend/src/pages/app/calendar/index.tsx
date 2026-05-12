@@ -3,7 +3,7 @@ import CalendarWeekView from '@/features/app/calendar/components/calendar-week-v
 import CalendarSchedule from '@/features/app/calendar/components/calender-schedule'
 import ViewToggle from '@/features/app/calendar/components/view-toggle'
 import CalendarServices from '@/features/app/calendar/components/calendar-services'
-import CreateNewService from '@/features/app/calendar/components/calendar-services/create-new-service'
+import CreateNewService from '@/components/e-clinic/doctor/calendar/create-new-service'
 import { Card, Tabs } from '@mantine/core'
 import { ArrowLeftIcon } from '@phosphor-icons/react'
 import { useState, type FC, type ReactElement } from 'react'
