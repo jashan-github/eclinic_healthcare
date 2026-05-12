@@ -57,7 +57,11 @@ const RegistrationForm: FC = (): ReactElement => {
 
   const handleEditRegistration = (data: Registration) => {
     const registrationId = registrationForm.values.id
-    if (!registrationId) return
+    if (!registrationId) {
+      console.error('handleEditRegistration called without a registrationId')
+      toast.error('Unable to update — please refresh and try again')
+      return
+    }
 
     updateRegistration(
       { registrationId, data },

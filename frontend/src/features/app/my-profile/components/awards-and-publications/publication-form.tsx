@@ -52,7 +52,11 @@ const PublicationForm: FC = (): ReactElement => {
 
   const handleEditPublication = (data: Publication) => {
     const publicationId = publicationForm.values.id
-    if (!publicationId) return
+    if (!publicationId) {
+      console.error('handleEditPublication called without a publicationId')
+      toast.error('Unable to update — please refresh and try again')
+      return
+    }
 
     updatePublication(
       { publicationId, data },

@@ -8,6 +8,8 @@ import { useMyProfile } from '../my-profile/hooks/use-my-profile'
 import { useSaveRxTemplate, useRxTemplate } from '@/hooks/use-rx-template'
 import type { SaveRxTemplatePayload } from '@/services/rx-template-service'
 
+const MAX_LETTERHEAD_SIZE_BYTES = 5 * 1024 * 1024 // 5 MB
+
 const RxTemplateConfig: FC = () => {
   const [selectedClinic, setSelectedClinic] = useState<string>('')
   const [letterheadFile, setLetterheadFile] = useState<File | null>(null)
@@ -59,7 +61,6 @@ const RxTemplateConfig: FC = () => {
     if (savedTemplate?.data?.templates?.length) {
       const templates = savedTemplate.data.templates
       const defaultTemplate = templates.find(t => t.is_default) || templates[0]
-      console.log("templates", defaultTemplate)
       setCurrentTemplateId(defaultTemplate.id)
 
       const { letterhead_image_url, updated_at } = defaultTemplate
@@ -111,6 +112,12 @@ const RxTemplateConfig: FC = () => {
   const handleUpload = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+
+    if (file.size > MAX_LETTERHEAD_SIZE_BYTES) {
+      toast.error('Letterhead must be 5 MB or smaller')
+      e.target.value = '' // allow re-selecting the same file after shrinking
+      return
+    }
 
     setLetterheadFile(file)
     setIsDefaultActive(false)

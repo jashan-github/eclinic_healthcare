@@ -276,8 +276,13 @@ const PatientMainContent: FC<PatientMainContentProps> = ({ patientId }): ReactEl
             <TextInput
               value={condition.name}
               onChange={(e) => updateCustomCondition(idx, 'name', e.target.value)}
-              onBlur={() => condition.name && autoSave(editedData)}
+              onBlur={() => {
+                // Only autosave once the user has typed something meaningful —
+                // avoids persisting partial values mid-typing.
+                if (condition.name?.trim().length >= 2) autoSave(editedData)
+              }}
               placeholder="Condition name"
+              maxLength={500}
               size="xs"
               className="flex-1"
               disabled={isPending}
@@ -332,6 +337,7 @@ const PatientMainContent: FC<PatientMainContentProps> = ({ patientId }): ReactEl
               onChange={(e) => updateTextFields('existing_condition', e.target.value || null)}
               onBlur={saveTextFields}
               placeholder="Enter existing condition"
+              maxLength={500}
               disabled={isPending}
             />
             <Input
@@ -360,6 +366,7 @@ const PatientMainContent: FC<PatientMainContentProps> = ({ patientId }): ReactEl
               onChange={(e) => updateTextFields('allergies', e.target.value || null)}
               onBlur={saveTextFields}
               placeholder="e.g., Penicillin, Peanuts"
+              maxLength={500}
               disabled={isPending}
             />
             <Input

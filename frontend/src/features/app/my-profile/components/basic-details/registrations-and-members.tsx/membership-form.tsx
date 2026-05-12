@@ -68,7 +68,11 @@ const MembershipForm: FC = (): ReactElement => {
 
   const handleEditMembership = (data: Membership) => {
     const membershipId = membershipForm.values.id
-    if (!membershipId) return
+    if (!membershipId) {
+      console.error('handleEditMembership called without a membershipId')
+      toast.error('Unable to update — please refresh and try again')
+      return
+    }
 
     updateMembership(
       { membershipId, data },

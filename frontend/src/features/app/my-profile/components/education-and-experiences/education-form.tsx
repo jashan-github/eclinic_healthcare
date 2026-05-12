@@ -55,7 +55,11 @@ const EducationForm: FC = (): ReactElement => {
 
   const handleEditEducation = (data: Education) => {
     const educationId = educationForm.values.id
-    if (!educationId) return
+    if (!educationId) {
+      console.error('handleEditEducation called without an educationId')
+      toast.error('Unable to update — please refresh and try again')
+      return
+    }
 
     updateEducation(
       { educationId, data },

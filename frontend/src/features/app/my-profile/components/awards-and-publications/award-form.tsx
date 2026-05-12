@@ -50,7 +50,11 @@ const AwardForm: FC = (): ReactElement => {
 
   const handleEditAward = (data: Award) => {
     const awardId = awardForm.values.id
-    if (!awardId) return
+    if (!awardId) {
+      console.error('handleEditAward called without an awardId')
+      toast.error('Unable to update — please refresh and try again')
+      return
+    }
 
     updateAward(
       { awardId, data },

@@ -68,7 +68,11 @@ const ExperienceForm: FC = (): ReactElement => {
 
   const handleEditExperience = (data: Experience) => {
     const experienceId = experienceForm.values.id
-    if (!experienceId) return
+    if (!experienceId) {
+      console.error('handleEditExperience called without an experienceId')
+      toast.error('Unable to update — please refresh and try again')
+      return
+    }
 
     updateExperience(
       { experienceId, data },
