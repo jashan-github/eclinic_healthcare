@@ -26,6 +26,7 @@ interface CalendarServicesProps {
 
 interface ServiceWithPricing {
   id: string;
+  assignment_id?: string;
   service_name: string;
   amount: number;
   duration: number;
@@ -85,6 +86,7 @@ const CalendarServices = ({ isActive = false }: CalendarServicesProps) => {
 
             return {
               id: service.service_id || service.id,
+              assignment_id: service.id,
               service_name: service.service_name || "Unknown Service",
               amount: pricing?.price_amount || pricing?.price || 0,
               duration: service.slot_duration_minutes || 30,
@@ -93,10 +95,11 @@ const CalendarServices = ({ isActive = false }: CalendarServicesProps) => {
               appointment_type: service.appointment_type || "",
               pricing_id: pricing?.id, // Store pricing_id for updates
             };
-          } catch (error) {
+          } catch {
             // If pricing fetch fails, return service with 0 price
             return {
               id: service.service_id || service.id,
+              assignment_id: service.id,
               service_name: service.service_name || "Unknown Service",
               amount: 0,
               duration: service.slot_duration_minutes || 30,

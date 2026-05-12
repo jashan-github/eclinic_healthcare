@@ -354,8 +354,37 @@ These are surfaced for awareness — do **not** treat as test failures:
 - New-patient form's `fetch('/api/patients')` hits a non-existent endpoint; submit silently fails. Wiring to `patientsService` is feature work.
 - Workspace sign-in form is not implemented; the placeholder is intentional.
 - Step-1 → Step-2 state persistence in the workspace flow is not wired.
+- Doctor webinar hosting/create remains backend-blocked; doctors can view/join supported webinars but cannot create new webinars until a doctor-scoped create endpoint exists.
 - ~50 pre-existing lint errors elsewhere in the codebase (unrelated to these PRs).
 - No automated test infrastructure in the repo. These cases are manual.
+
+---
+
+# PR — `fix/calendar-services-create-button` (Doctor service bug pass)
+
+## Doctor Calendar — Create Service
+
+| ID | Steps | Expected |
+|---|---|---|
+| DOC-SVC-01 | Login as doctor, open `/app/calendar`, switch to Services | **Create New Service** is visible. |
+| DOC-SVC-02 | Click Create New Service | Service Name is a dropdown populated from `/v1/doctor/services/available`; it does not call `/v1/admin/service-types`. |
+| DOC-SVC-03 | Select an available service, duration 5+ minutes, price with max 2 decimals, submit | Network calls `/v1/doctor/services`; service appears in the doctor Services list after refresh/refetch. |
+| DOC-SVC-04 | Open Duration dropdown as doctor | 2-minute and 3-minute options are not shown; minimum option is 5 minutes. |
+| DOC-SVC-05 | Enter service name or nickname longer than 255 chars in an admin create flow | Frontend validation blocks the submit with a max-length error. |
+
+## Doctor Calendar — Edit Service
+
+| ID | Steps | Expected |
+|---|---|---|
+| DOC-SVC-06 | Open Edit Service, change duration, click Update | Network calls `/v1/doctor/services/{assignmentId}` with `slot_duration_minutes`; list refreshes with the updated duration. |
+| DOC-SVC-07 | Edit price to `0`, negative value, letters, or more than 2 decimal places | Frontend blocks submit and shows a price validation toast. |
+| DOC-SVC-08 | Change currency and save | Network pricing payload includes the selected ISO currency code. |
+
+## Doctor Webinar Chat
+
+| ID | Steps | Expected |
+|---|---|---|
+| DOC-WEB-01 | In webinar chat, paste/type more than 1000 characters | Input is capped at 1000 characters and cannot send a longer message. |
 
 ---
 

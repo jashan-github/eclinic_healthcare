@@ -97,7 +97,7 @@ const followupValidityDropdownOptions = [
 
 // Zod schema for form validation
 const serviceSchema = z.object({
-  serviceName: z.string().min(1, 'Service name is required'),
+  serviceName: z.string().min(1, 'Service name is required').max(255, 'Service name must be 255 characters or fewer'),
   type: z.enum(['in-clinic', 'video']),
   paymentSettings: z.enum(['pre-paid', 'post-consultation']),
   price: z
@@ -109,7 +109,7 @@ const serviceSchema = z.object({
     ),
   duration: z.string().min(1, 'Duration is required'),
   followup_validity: z.string().min(1, 'Duration is required').optional(),
-  nickname: z.string().optional(),
+  nickname: z.string().max(255, 'Nickname must be 255 characters or fewer').optional(),
   allowBooking: z.boolean(),
   advanceBookingDays: z
     .number()
