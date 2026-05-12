@@ -21,15 +21,15 @@ import { useForm, Controller } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useCalendarService } from '@/features/app/calendar/hooks/use-calendar-service'
-import { useCreateNewService } from '@/hooks/use-create-new-service'
 import { useCreateAdminService, useUpdateAdminService } from '@/hooks/use-admin-service-hooks'
-import type { CreateNewServicePayload } from '@/services/create-new-service'
 import type { CreateAdminServicePayload } from '@/services/admin-service'
 import { useAuth } from '@/context/auth/auth-context-utils'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import api from '@/lib/api'
 import { useEffect } from 'react'
 import { toast } from 'react-toastify'
+import { getCalendarServices as getAvailableDoctorServices } from '@/features/app/calendar/services/calendar-services-service-doctor'
+import { addDoctorService, createDoctorServicePricing } from '@/services/weekly-schedule'
 
 // Duration dropdown options
 const durationDropdownItems = [
@@ -146,11 +146,57 @@ const CreateNewService: FC<CreateNewServiceProps> = ({
   const roleFromStorage = localStorage.getItem('role')
   const userRole = (user?.role || roleFromStorage || 'doctor').toLowerCase()
   const isAdmin = userRole === 'super_admin' || userRole === 'clinic_admin'
+  const queryClient = useQueryClient()
 
-  const { calendarServices } = useCalendarService()
-  const createNewServiceMutation = useCreateNewService()
+  const { calendarServices } = useCalendarService(isAdmin)
   const createAdminServiceMutation = useCreateAdminService()
   const updateAdminServiceMutation = useUpdateAdminService()
+
+  const { data: availableDoctorServices = [] } = useQuery({
+    queryKey: ['doctor-services-available'],
+    queryFn: getAvailableDoctorServices,
+    enabled: !isAdmin && isOpen && !isUpdateMode,
+  })
+
+  const createDoctorServiceMutation = useMutation({
+    mutationFn: async (data: ServiceFormData) => {
+      const serviceId = data.serviceName
+      const slotDuration = Number(data.duration) || 30
+      const priceAmount = Number(data.price || 0)
+
+      const response = await addDoctorService({
+        service_id: serviceId,
+        slot_duration_minutes: slotDuration,
+      })
+
+      const assignmentId = response.data?.id
+      if (assignmentId && slotDuration !== 30) {
+        await api.patch(`/v1/doctor/services/${assignmentId}`, {
+          slot_duration_minutes: slotDuration,
+        })
+      }
+
+      if (priceAmount > 0) {
+        await createDoctorServicePricing({
+          service_id: serviceId,
+          price_amount: priceAmount,
+          currency: 'XCG',
+        })
+      }
+
+      return response
+    },
+    onSuccess: () => {
+      toast.success('Service created successfully!')
+      setIsOpen(false)
+      queryClient.invalidateQueries({ queryKey: ['doctor-services'] })
+      queryClient.invalidateQueries({ queryKey: ['doctor-services-available'] })
+      queryClient.invalidateQueries({ queryKey: ['calendarServices'] })
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Unable to create service')
+    },
+  })
 
   const {
     control,
@@ -301,30 +347,12 @@ const CreateNewService: FC<CreateNewServiceProps> = ({
         })
       }
     } else {
-      // Use doctor service creation for non-admin users
-      const payload: CreateNewServicePayload = {
-        service_name: formData.serviceName,
-        type: formData.type === 'in-clinic' ? 'visit' : 'video',
-        payment_method: formData.paymentSettings,
-        amount: formData.price || 0,
-        skip_price: false,
-        duration: formData.duration,
-        followup_validity: formData.followup_validity,
-        nickname: formData.nickname,
-        allow_patient_booking: formData.allowBooking,
-        advance_booking_from: formData.advanceBookingDays,
-        minimum_notice: formData.minimumNoticeHours,
-        appointment_type: formData.appointmentType === 'regular' ? 'regular' : 'follow_up'
-      }
-
-      createNewServiceMutation.mutate(payload, {
-        onSuccess: () => setIsOpen(false)
-      })
+      createDoctorServiceMutation.mutate(formData)
     }
   }
 
   const serviceName = watch('serviceName')
-  const nameExists = !isUpdateMode && calendarServices.some((s) => {
+  const nameExists = isAdmin && !isUpdateMode && calendarServices.some((s) => {
     if (!s) return false
     const serviceNameLower = (serviceName || '').toString().toLowerCase().trim()
     const serviceNameMatch = s.service_name ? s.service_name.toString().toLowerCase() === serviceNameLower : false
@@ -353,19 +381,38 @@ const CreateNewService: FC<CreateNewServiceProps> = ({
             <Controller
               name="serviceName"
               control={control}
-              render={({ field }) => (
-                <Input
-                  {...field}
-                  placeholder="Enter service name"
-                  disabled={isUpdateMode}
-                  style={{
-                    borderColor: nameExists ? '#fa5252' : undefined,
-                    boxShadow: nameExists
-                      ? '0 0 0 2px rgba(250, 82, 82, 0.15)'
-                      : undefined
-                  }}
-                />
-              )}
+              render={({ field }) => {
+                if (!isAdmin && !isUpdateMode) {
+                  return (
+                    <Select
+                      {...field}
+                      placeholder="Select service"
+                      data={availableDoctorServices.map((service) => ({
+                        value: service.id,
+                        label: service.nickname
+                          ? `${service.nickname} (${service.service_name})`
+                          : service.service_name,
+                      }))}
+                      searchable
+                      nothingFoundMessage="No services available"
+                    />
+                  )
+                }
+
+                return (
+                  <Input
+                    {...field}
+                    placeholder="Enter service name"
+                    disabled={isUpdateMode}
+                    style={{
+                      borderColor: nameExists ? '#fa5252' : undefined,
+                      boxShadow: nameExists
+                        ? '0 0 0 2px rgba(250, 82, 82, 0.15)'
+                        : undefined
+                    }}
+                  />
+                )
+              }}
             />
           </Input.Wrapper>
 
@@ -464,7 +511,9 @@ const CreateNewService: FC<CreateNewServiceProps> = ({
                 <Select
                   {...field}
                   placeholder="Select duration"
-                  data={durationDropdownItems}
+                  data={isAdmin
+                    ? durationDropdownItems
+                    : durationDropdownItems.filter(({ value }) => Number(value) >= 5)}
                   style={{ maxWidth: '50%' }}
                   maxDropdownHeight={400}
                   error={errors.duration?.message}
@@ -651,8 +700,8 @@ const CreateNewService: FC<CreateNewServiceProps> = ({
             <Button
               type="submit"
               fullWidth
-              loading={isUpdateMode ? updateAdminServiceMutation.isPending : (createNewServiceMutation.isPending || createAdminServiceMutation.isPending)}
-              disabled={nameExists || (isUpdateMode ? updateAdminServiceMutation.isPending : (createNewServiceMutation.isPending || createAdminServiceMutation.isPending))}
+              loading={isUpdateMode ? updateAdminServiceMutation.isPending : (createDoctorServiceMutation.isPending || createAdminServiceMutation.isPending)}
+              disabled={nameExists || (isUpdateMode ? updateAdminServiceMutation.isPending : (createDoctorServiceMutation.isPending || createAdminServiceMutation.isPending))}
             >
               {isUpdateMode ? 'Update Service' : 'Create Service'}
             </Button>

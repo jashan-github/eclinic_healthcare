@@ -13,11 +13,9 @@ const CalendarPage: FC = (): ReactElement => {
   const [activeTab, setActiveTab] = useState<string | null>('list')
   const [isOpen, setIsOpen] = useState(false)
   const { user } = useAuth()
-  // Service creation currently calls admin-only endpoints
-  // (/v1/admin/service-types + /v1/admin/services). Hide the button for
-  // non-admins until backend exposes a doctor-scoped equivalent.
   const userRole = (user?.role || localStorage.getItem('role') || '').toLowerCase()
-  const canCreateService = userRole === 'super_admin' || userRole === 'clinic_admin'
+  const canCreateService =
+    userRole === 'super_admin' || userRole === 'clinic_admin' || userRole === 'doctor'
 
   return (
     <div className="h-screen overflow-hidden bg-[#F4F6F9]">
