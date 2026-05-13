@@ -359,6 +359,63 @@ These are surfaced for awareness — do **not** treat as test failures:
 
 ---
 
+# PR — `fix/calendar-services-create-button` (Doctor service bug pass)
+
+## Doctor Calendar — Create Service
+
+| ID | Steps | Expected |
+|---|---|---|
+| DOC-SVC-01 | Login as doctor, open `/app/calendar`, switch to Services | **Create New Service** is visible. |
+| DOC-SVC-02 | Click Create New Service | Service Name is a dropdown populated from `/v1/doctor/services/available`; it does not call `/v1/admin/service-types`. |
+| DOC-SVC-03 | Select an available service, duration 5+ minutes, price with max 2 decimals, submit | Network calls `/v1/doctor/services`; service appears in the doctor Services list after refresh/refetch. |
+| DOC-SVC-04 | Open Duration dropdown as doctor | 2-minute and 3-minute options are not shown; minimum option is 5 minutes. |
+| DOC-SVC-05 | Enter service name or nickname longer than 255 chars in an admin create flow | Frontend validation blocks the submit with a max-length error. |
+
+## Doctor Calendar — Edit Service
+
+| ID | Steps | Expected |
+|---|---|---|
+| DOC-SVC-06 | Open Edit Service, change duration, click Update | Network calls `/v1/doctor/services/{assignmentId}` with `slot_duration_minutes`; list refreshes with the updated duration. |
+| DOC-SVC-07 | Edit price to `0`, negative value, letters, or more than 2 decimal places | Frontend blocks submit and shows a price validation toast. |
+| DOC-SVC-08 | Change currency and save | Network pricing payload includes the selected ISO currency code. |
+
+## Doctor Webinar Chat
+
+| ID | Steps | Expected |
+|---|---|---|
+| DOC-WEB-01 | In webinar chat, paste/type more than 1000 characters | Input is capped at 1000 characters and cannot send a longer message. |
+
+---
+
+# PR — `fix/staff-module-validation` (Staff module bug pass)
+
+## Messages
+
+| ID | Steps | Expected |
+|---|---|---|
+| STF-MSG-01 | Open `/app/messages`, select an active conversation, leave message empty and click send | Message is not sent; inline validation shows "Message cannot be empty". |
+| STF-MSG-02 | Type or paste more than 5000 characters | Input is capped/validated; send is blocked and the user sees max-length feedback. |
+| STF-MSG-03 | Type a valid message and press Enter | Message is encrypted and sent through the existing WebSocket flow. |
+
+## Calendar — Block Calendar
+
+| ID | Steps | Expected |
+|---|---|---|
+| STF-CAL-01 | Open Block Calendar form | Optional **Reason** textarea is visible. |
+| STF-CAL-02 | Enter a reason and submit | Network payload includes `reason` with the entered trimmed text. |
+| STF-CAL-03 | Leave reason empty and submit | Calendar block still succeeds; payload sends an empty reason for backward compatibility. |
+| STF-CAL-04 | Enter more than 500 characters in reason | Frontend validation blocks submit with a max-length error. |
+
+## Calendar — Create Service
+
+| ID | Steps | Expected |
+|---|---|---|
+| STF-SVC-01 | In Create Service, enter a service name over 255 chars | Zod validation blocks submit with a max-length error. |
+| STF-SVC-02 | In Create Service, enter a nickname over 255 chars | Zod validation blocks submit with a max-length error. |
+| STF-SVC-03 | Login as doctor, create service from available services | Uses doctor-scoped `/v1/doctor/services`; no admin endpoint is called. |
+
+---
+
 # Critical regression checklist (5 minutes)
 
 If you only run a subset, run these first — they cover the highest-impact bugs across all 5 PRs:
