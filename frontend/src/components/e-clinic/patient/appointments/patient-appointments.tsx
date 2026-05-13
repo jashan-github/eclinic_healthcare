@@ -48,21 +48,26 @@ const PatientAppointments = () => {
   );
   const navigate = useNavigate();
 
-  const appointments = data ? data[activeTab] : [];
+  // Treat an error from the appointments endpoint as "no appointments yet"
+  // for rendering purposes — the user can still book one or refresh. We
+  // surface the technical error in a small dismissable notice instead of
+  // taking over the whole page with a red message.
+  const safeData = data ?? { upcoming: [], pending: [], past: [] };
+  const appointments = safeData[activeTab];
   const FALLBACK_IMAGE = "/assets/icons/doctor-icon.svg";
 
   const tabs = [
     {
       label: "Upcoming",
       value: "upcoming" as const,
-      count: data?.upcoming.length || 0,
+      count: safeData.upcoming.length,
     },
     {
       label: "Pending",
       value: "pending" as const,
-      count: data?.pending.length || 0,
+      count: safeData.pending.length,
     },
-    { label: "Past", value: "past" as const, count: data?.past.length || 0 },
+    { label: "Past", value: "past" as const, count: safeData.past.length },
   ];
 
   // Handle payment status changes
@@ -219,12 +224,6 @@ const PatientAppointments = () => {
 
   if (isLoading)
     return <div className="p-10 text-center">Loading appointments...</div>;
-  if (isError)
-    return (
-      <div className="p-10 text-center text-red-500">
-        Failed to load appointments
-      </div>
-    );
 
   const handleSendMessage = (chat_room_id: string) => {
     if (chat_room_id) {
@@ -287,12 +286,31 @@ const PatientAppointments = () => {
         </h2>
         <Link
           to="/app/doctors"
-          className="bg-[#002FD4] hover:bg-[#001FB8] text-white font-poppins font-semibold 
+          className="bg-[#002FD4] hover:bg-[#001FB8] text-white font-poppins font-semibold
             text-[14px] leading-[20px] py-2.5 px-6 rounded-md transition-colors"
         >
           Book Appointment
         </Link>
       </div>
+
+      {isError && (
+        <div
+          role="status"
+          className="mb-4 flex items-center justify-between gap-3 rounded-md border border-[#FCD34D] bg-[#FFFBEB] px-4 py-3 text-sm text-[#92400E] font-poppins"
+        >
+          <span>
+            We couldn&apos;t load your appointments right now. You can still book a
+            new one — try refreshing in a moment.
+          </span>
+          <button
+            type="button"
+            onClick={() => refetch()}
+            className="font-semibold text-[#92400E] underline underline-offset-2 hover:opacity-80"
+          >
+            Retry
+          </button>
+        </div>
+      )}
 
       {/* Tabs - New Style matching EditProfileSection */}
       <div className="bg-white rounded-lg border border-[#E4E5ED] mb-6">
