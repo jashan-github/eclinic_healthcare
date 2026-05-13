@@ -1,0 +1,79 @@
+# Render Blueprint — reproducible deploy for the e-clinic FastAPI backend
+# + Postgres. Lives at the repo root; Render auto-detects this file when
+# you create a Blueprint from the repo.
+#
+# After importing in Render dashboard, you'll be prompted to fill in any
+# env vars marked `sync: false` (the secrets the YAML refuses to commit).
+#
+# Free-tier specifics:
+#   - Web service spins down after ~15 min idle. First request after that
+#     takes ~30s. For demos, hit /docs 5 min before to warm the dyno.
+#   - Postgres free plan is 90 days, 1 GB. Set a calendar reminder.
+
+databases:
+  - name: eclinic-db
+    region: singapore # closest to India users; switch to oregon/frankfurt if needed
+    plan: free
+    databaseName: eclinic
+    user: eclinic
+    ipAllowList: [] # only internal Render services can reach it; safer
+
+services:
+  # ---------------------------------------------------------------------
+  # Main FastAPI backend
+  # ---------------------------------------------------------------------
+  - type: web
+    name: eclinic-api
+    runtime: docker
+    region: singapore
+    plan: free
+    branch: main
+    rootDir: backend/fastapi-backend
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    # The image's ENTRYPOINT (scripts/entrypoint.sh) runs migrations when
+    # RUN_MIGRATIONS=true, then exec's whatever we pass below. We override
+    # the CMD here so uvicorn binds to Render's injected $PORT (the
+    # Dockerfile hardcodes 8000, which Render's edge proxy doesn't probe).
+    dockerCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    autoDeploy: true # redeploy on every push to main
+    envVars:
+      # --- Database wiring (auto-populated from the eclinic-db block) ---
+      - key: DATABASE_URL
+        fromDatabase:
+          name: eclinic-db
+          property: connectionString
+
+      # --- Runtime config ---
+      - key: RUN_MIGRATIONS
+        value: "true" # entrypoint.sh runs alembic on every cold start
+      - key: PYTHON_VERSION
+        value: "3.11"
+
+      # --- Auth secrets (Render generates these once at first deploy) ---
+      - key: SECRET_KEY
+        generateValue: true
+      - key: JWT_SECRET_KEY
+        generateValue: true
+
+      # --- Things you set manually in the Render dashboard ---
+      # `sync: false` = Render doesn't write the value into render.yaml on
+      # update, and the YAML doesn't carry it either. You enter them once
+      # in Dashboard > Service > Environment.
+      - key: CORS_ORIGINS
+        sync: false # e.g. "https://e-clinic.vercel.app,http://localhost:5173"
+      - key: AGORA_APP_ID
+        sync: false
+      - key: AGORA_APP_CERTIFICATE
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: FROM_EMAIL
+        sync: false
