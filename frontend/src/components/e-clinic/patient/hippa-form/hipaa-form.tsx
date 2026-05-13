@@ -3,6 +3,44 @@ import { toast } from 'react-toastify'
 import { useSubmitHipaaForm } from '../hook/use-hipaa'
 import type { HipaaReleaseFormPayload } from '../service/hipaa-service'
 
+/* ---------------- VALIDATION HELPERS ---------------- */
+
+// Common placeholder strings users sometimes type into signature fields
+// when they don't want to fill them out. Matched case-insensitively after
+// trimming.
+const PLACEHOLDER_SIGNATURES = new Set([
+  'test', 'tests', 'testing',
+  'asdf', 'asdfasdf',
+  'abc', 'abcd', 'abcde',
+  '1234', '12345', '123456',
+  'xxx', 'xxxx', 'xxxxx',
+  'qwer', 'qwerty',
+  'foo', 'bar', 'baz',
+  'none', 'n/a', 'na',
+  '...', 'sign', 'signature'
+])
+
+const SIGNATURE_MIN = 2
+const SIGNATURE_MAX = 100
+const TEXT_MAX = 255
+// Section 10 signature must be recent — within the last year. Anything
+// older almost certainly indicates a copy-pasted stale date.
+const SIGNATURE_DATE_MAX_AGE_DAYS = 365
+
+const isValidDateString = (v: string): boolean => {
+  if (!v) return false
+  const d = new Date(v)
+  return !Number.isNaN(d.getTime())
+}
+
+const isPlaceholderSignature = (v: string): boolean =>
+  PLACEHOLDER_SIGNATURES.has(v.trim().toLowerCase())
+
+const todayAtMidnight = (): Date => {
+  const t = new Date()
+  t.setHours(0, 0, 0, 0)
+  return t
+}
 
 /* ---------------- TYPE DEFINITION ---------------- */
 
@@ -183,71 +221,219 @@ const HipaaForm = ({ onClose, onSuccess }: HipaaFormProps) => {
   }
 
   const validateForm = () => {
-    const emptyFields: string[] = []
+    const issues: string[] = []
+    const today = todayAtMidnight()
+    const oldestAllowedSignatureDate = new Date(today)
+    oldestAllowedSignatureDate.setDate(oldestAllowedSignatureDate.getDate() - SIGNATURE_DATE_MAX_AGE_DAYS)
 
-    // Section 1 - Required fields
-    if (!form.section1_first_name.trim()) emptyFields.push('Section 1: First Name')
-    if (!form.section1_last_name.trim()) emptyFields.push('Section 1: Last Name')
-    if (!form.section1_date_of_birth) emptyFields.push('Section 1: Date of Birth')
-    if (!form.section1_address.trim()) emptyFields.push('Section 1: Address')
-    if (!form.section1_country.trim()) emptyFields.push('Section 1: City/Country/Region')
-
-    // Section 2 - Required fields
-    if (!form.section2_name.trim()) emptyFields.push('Section 2: Name')
-    if (!form.section2_address.trim()) emptyFields.push('Section 2: Address/Telephone')
-    if (!form.section2_country.trim()) emptyFields.push('Section 2: City/Country/Region')
-
-    // Section 3 - Required fields
-    if (!form.section3_name.trim()) emptyFields.push('Section 3: Name')
-    if (!form.section3_relationship_to_patient.trim()) emptyFields.push('Section 3: Relationship to Patient')
-    if (!form.section3_phone_number.trim()) emptyFields.push('Section 3: Telephone Number')
-    if (!form.section3_address.trim()) emptyFields.push('Section 3: Address')
-    if (!form.section3_country.trim()) emptyFields.push('Section 3: City/Country/Region')
-
-    // Section 4 - At least one should be filled (or N/A)
-    if (!form.section4_expiration_date && !form.section4_expiration_event) {
-      emptyFields.push('Section 4: Expiration Date or Event (enter N/A if not applicable)')
+    // ----- Required text helper -----
+    const requireText = (value: string, label: string, max: number = TEXT_MAX) => {
+      const trimmed = value?.trim() ?? ''
+      if (!trimmed) issues.push(`${label} is required`)
+      else if (trimmed.length > max) issues.push(`${label} must be ${max} characters or fewer`)
     }
 
-    // Section 5 - At least one checkbox should be checked
-    if (!form.section5_medical_records && !form.section5_dental_records && !form.section5_other_non_specific) {
-      emptyFields.push('Section 5: Select at least one type of health information')
+    // ----- Section 6 signature + date helper (only fires when checkbox is on) -----
+    const requireSignatureBlock = (
+      checked: boolean,
+      signature: string,
+      date: string,
+      sectionLabel: string,
+      extraDetails?: { value: string; label: string }
+    ) => {
+      if (!checked) return
+      const trimmedSig = signature?.trim() ?? ''
+      if (!trimmedSig) {
+        issues.push(`${sectionLabel}: signature is required`)
+      } else if (trimmedSig.length < SIGNATURE_MIN || trimmedSig.length > SIGNATURE_MAX) {
+        issues.push(`${sectionLabel}: signature must be ${SIGNATURE_MIN}-${SIGNATURE_MAX} characters`)
+      } else if (isPlaceholderSignature(trimmedSig)) {
+        issues.push(`${sectionLabel}: signature looks like a placeholder; please sign with your real name`)
+      }
+      if (!date) {
+        issues.push(`${sectionLabel}: date is required`)
+      } else if (!isValidDateString(date)) {
+        issues.push(`${sectionLabel}: date is not a valid date`)
+      } else if (new Date(date).getTime() > today.getTime()) {
+        issues.push(`${sectionLabel}: date cannot be in the future`)
+      }
+      if (extraDetails && !extraDetails.value.trim()) {
+        issues.push(`${sectionLabel}: ${extraDetails.label} is required`)
+      }
     }
 
-    // Section 6 - If any checkbox is checked, signature and date required
-    if (form.section6_communicable_disease && (!form.section6_communicable_disease_signature || !form.section6_communicable_disease_date)) {
-      emptyFields.push('Section 6: Communicable Disease - Signature and Date required')
+    // ----- Section 1 -----
+    requireText(form.section1_first_name, 'Section 1: First Name')
+    requireText(form.section1_last_name, 'Section 1: Last Name')
+    if (form.section1_middle_name && form.section1_middle_name.length > TEXT_MAX) {
+      issues.push(`Section 1: Middle Name must be ${TEXT_MAX} characters or fewer`)
     }
-    if (form.section6_reproductive_health && (!form.section6_reproductive_health_signature || !form.section6_reproductive_health_date)) {
-      emptyFields.push('Section 6: Reproductive Health - Signature and Date required')
+    if (!form.section1_date_of_birth) {
+      issues.push('Section 1: Date of Birth is required')
+    } else if (!isValidDateString(form.section1_date_of_birth)) {
+      issues.push('Section 1: Date of Birth is not a valid date')
+    } else if (new Date(form.section1_date_of_birth).getTime() > today.getTime()) {
+      issues.push('Section 1: Date of Birth cannot be in the future')
     }
-    if (form.section6_hiv_test_results && (!form.section6_hiv_test_results_signature || !form.section6_hiv_test_results_date)) {
-      emptyFields.push('Section 6: HIV Test Results - Signature and Date required')
+    requireText(form.section1_address, 'Section 1: Address')
+    requireText(form.section1_country, 'Section 1: City/Country/Region')
+
+    // ----- Section 2 -----
+    requireText(form.section2_name, 'Section 2: Name')
+    requireText(form.section2_address, 'Section 2: Address/Telephone')
+    requireText(form.section2_country, 'Section 2: City/Country/Region')
+
+    // ----- Section 3 -----
+    requireText(form.section3_name, 'Section 3: Name')
+    requireText(form.section3_relationship_to_patient, 'Section 3: Relationship to Patient')
+    requireText(form.section3_phone_number, 'Section 3: Telephone Number')
+    requireText(form.section3_address, 'Section 3: Address')
+    requireText(form.section3_country, 'Section 3: City/Country/Region')
+
+    // ----- Section 4: expiration date OR event -----
+    const hasExpirationDate = !!form.section4_expiration_date
+    const hasExpirationEvent = !!form.section4_expiration_event?.trim()
+    if (!hasExpirationDate && !hasExpirationEvent) {
+      issues.push('Section 4: Expiration Date or Event is required (enter N/A in the event field if not applicable)')
     }
-    if (form.section6_mental_health_records && (!form.section6_mental_health_records_signature || !form.section6_mental_health_records_date)) {
-      emptyFields.push('Section 6: Mental Health Records - Signature and Date required')
-    }
-    if (form.section6_substance_use_disorder && (!form.section6_substance_use_disorder_signature || !form.section6_substance_use_disorder_date)) {
-      emptyFields.push('Section 6: Substance Use Disorder - Signature and Date required')
-    }
-    if (form.section6_other && (!form.section6_other_signature || !form.section6_other_date || !form.section6_other_records_details)) {
-      emptyFields.push('Section 6: Other - Signature, Date, and Details required')
-    }
-    if (form.section6_psychotherapy_notes && (!form.section6_psychotherapy_notes_signature || !form.section6_psychotherapy_notes_date)) {
-      emptyFields.push('Section 6: Psychotherapy Notes - Signature and Date required')
+    if (hasExpirationDate) {
+      const dateStr = form.section4_expiration_date as string
+      if (!isValidDateString(dateStr)) {
+        issues.push('Section 4: Expiration Date is not a valid date')
+      } else if (new Date(dateStr).getTime() <= today.getTime()) {
+        issues.push('Section 4: Expiration Date must be in the future')
+      }
     }
 
-    // Section 7 - At least one purpose should be selected
-    if (!form.section7_healthcare && !form.section7_research && !form.section7_marketing &&
-      !form.section7_sale && !form.section7_legal && !form.section7_other) {
-      emptyFields.push('Section 7: Select at least one purpose for release')
+    // ----- Section 5: at least one selection -----
+    if (
+      !form.section5_medical_records &&
+      !form.section5_dental_records &&
+      !form.section5_other_non_specific
+    ) {
+      issues.push('Section 5: Select at least one type of health information')
+    }
+    if (form.section5_other_non_specific) {
+      requireText(form.section5_non_specific_records_details, 'Section 5: Other (details)', 1000)
     }
 
-    // Section 10 - Required fields
-    if (!form.section10_name_of_patient_client.trim()) emptyFields.push('Section 10: Name of Patient/Client')
-    if (!form.section10_signature_date) emptyFields.push('Section 10: Signature Date')
+    // ----- Section 6: per-row signature + date when checkbox is ticked -----
+    requireSignatureBlock(
+      form.section6_communicable_disease,
+      form.section6_communicable_disease_signature,
+      form.section6_communicable_disease_date,
+      'Section 6: Communicable Disease'
+    )
+    requireSignatureBlock(
+      form.section6_reproductive_health,
+      form.section6_reproductive_health_signature,
+      form.section6_reproductive_health_date,
+      'Section 6: Reproductive Health'
+    )
+    requireSignatureBlock(
+      form.section6_hiv_test_results,
+      form.section6_hiv_test_results_signature,
+      form.section6_hiv_test_results_date,
+      'Section 6: HIV Test Results'
+    )
+    requireSignatureBlock(
+      form.section6_mental_health_records,
+      form.section6_mental_health_records_signature,
+      form.section6_mental_health_records_date,
+      'Section 6: Mental Health Records'
+    )
+    requireSignatureBlock(
+      form.section6_substance_use_disorder,
+      form.section6_substance_use_disorder_signature,
+      form.section6_substance_use_disorder_date,
+      'Section 6: Substance Use Disorder'
+    )
+    requireSignatureBlock(
+      form.section6_other,
+      form.section6_other_signature,
+      form.section6_other_date,
+      'Section 6: Other',
+      { value: form.section6_other_records_details, label: 'records details' }
+    )
+    requireSignatureBlock(
+      form.section6_psychotherapy_notes,
+      form.section6_psychotherapy_notes_signature,
+      form.section6_psychotherapy_notes_date,
+      'Section 6: Psychotherapy Notes'
+    )
 
-    return emptyFields
+    // ----- Section 7: at least one purpose -----
+    if (
+      !form.section7_healthcare &&
+      !form.section7_research &&
+      !form.section7_marketing &&
+      !form.section7_sale &&
+      !form.section7_legal &&
+      !form.section7_other
+    ) {
+      issues.push('Section 7: Select at least one purpose for release')
+    }
+    if (form.section7_other) {
+      requireText(form.section7_other_details, 'Section 7: Other purpose details', 1000)
+    }
+
+    // ----- Section 9: optional, just max-length -----
+    if (
+      form.section9_additional_information &&
+      form.section9_additional_information.length > 2000
+    ) {
+      issues.push('Section 9: Additional Information must be 2000 characters or fewer')
+    }
+
+    // ----- Section 10: signatory + date constraints -----
+    requireText(form.section10_name_of_patient_client, 'Section 10: Name of Patient/Client')
+    // The patient name in section 10 is itself the signature line, so reject placeholders.
+    if (
+      form.section10_name_of_patient_client.trim() &&
+      isPlaceholderSignature(form.section10_name_of_patient_client)
+    ) {
+      issues.push(
+        'Section 10: Name of Patient/Client looks like a placeholder; please sign with your real name'
+      )
+    }
+    if (!form.section10_signature_date) {
+      issues.push('Section 10: Signature Date is required')
+    } else if (!isValidDateString(form.section10_signature_date)) {
+      issues.push('Section 10: Signature Date is not a valid date')
+    } else {
+      const sigDate = new Date(form.section10_signature_date)
+      if (sigDate.getTime() > today.getTime()) {
+        issues.push('Section 10: Signature Date cannot be in the future')
+      } else if (sigDate.getTime() < oldestAllowedSignatureDate.getTime()) {
+        issues.push(
+          `Section 10: Signature Date is more than ${SIGNATURE_DATE_MAX_AGE_DAYS} days old; please use a current date`
+        )
+      }
+    }
+    // Section 10 signatory / translator fields: max-length only (optional copies of authority).
+    if (form.section10_name_of_signatory_if_not_patient.length > TEXT_MAX) {
+      issues.push(`Section 10: Name of Signatory must be ${TEXT_MAX} characters or fewer`)
+    }
+    if (form.section10_authority_to_sign.length > TEXT_MAX) {
+      issues.push(`Section 10: Authority to Sign must be ${TEXT_MAX} characters or fewer`)
+    }
+    if (form.section10_name_of_translator.length > TEXT_MAX) {
+      issues.push(`Section 10: Name of Translator must be ${TEXT_MAX} characters or fewer`)
+    }
+    if (form.section10_signature_of_translator.trim()) {
+      if (
+        form.section10_signature_of_translator.trim().length < SIGNATURE_MIN ||
+        form.section10_signature_of_translator.trim().length > SIGNATURE_MAX
+      ) {
+        issues.push(
+          `Section 10: Signature of Translator must be ${SIGNATURE_MIN}-${SIGNATURE_MAX} characters`
+        )
+      } else if (isPlaceholderSignature(form.section10_signature_of_translator)) {
+        issues.push('Section 10: Signature of Translator looks like a placeholder')
+      }
+    }
+
+    return issues
   }
 
   const handleSubmit = async () => {

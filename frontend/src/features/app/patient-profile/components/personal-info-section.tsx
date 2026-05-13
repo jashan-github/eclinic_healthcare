@@ -1,10 +1,39 @@
 import { PencilSimpleIcon } from '@phosphor-icons/react'
 import { useState, useEffect, useRef } from 'react'
 import { toast } from 'react-toastify'
+import { z } from 'zod'
 import { usePatientProfile } from '../hooks/use-patient-profile'
 import { BLOOD_TYPES } from '@/utils/blood-types-options'
 import { useLanguages } from '@/hooks/use-languages'
 import { useLocation } from '@/features/app/my-profile/hooks/use-locations'
+
+// Backend-aligned validation: see swagger spec for `update-patient-profile`.
+const personalInfoSchema = z
+  .object({
+    firstName: z
+      .string()
+      .trim()
+      .min(1, 'First name is required')
+      .max(255, 'First name must be 255 characters or fewer'),
+    lastName: z
+      .string()
+      .trim()
+      .min(1, 'Last name is required')
+      .max(255, 'Last name must be 255 characters or fewer'),
+    phoneNumber: z
+      .string()
+      .trim()
+      .max(20, 'Contact number must be 20 characters or fewer'),
+    dateOfBirth: z.string().optional()
+  })
+  .refine(
+    (data) => {
+      if (!data.dateOfBirth) return true
+      const d = new Date(data.dateOfBirth)
+      return !Number.isNaN(d.getTime()) && d.getTime() <= Date.now()
+    },
+    { message: 'Date of birth cannot be in the future', path: ['dateOfBirth'] }
+  )
 
 const MARITAL_STATUS_OPTIONS = [
   { label: 'Single', value: 'Single' },
@@ -21,7 +50,7 @@ const PersonalInfoSection = () => {
   const [selectedStateId, setSelectedStateId] = useState<string>('')
   const [selectedCityId, setSelectedCityId] = useState<string>('')
   const [selectedLanguageId, setSelectedLanguageId] = useState<string>('')
-  console.log("patientProfile",patientProfile)
+
   // Initialize IDs from patientProfile first
   useEffect(() => {
     if (patientProfile) {
@@ -111,12 +140,23 @@ const PersonalInfoSection = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    const parsed = personalInfoSchema.safeParse({
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      phoneNumber: formData.phoneNumber,
+      dateOfBirth: formData.dateOfBirth
+    })
+    if (!parsed.success) {
+      parsed.error.issues.forEach((issue) => toast.error(issue.message))
+      return
+    }
+
     // Create payload exactly as swagger expects
     const payload = {
-      first_name: formData.firstName,
+      first_name: formData.firstName.trim(),
       middle_name: formData.middleName,
-      last_name: formData.lastName,
-      contact_number: formData.phoneNumber,
+      last_name: formData.lastName.trim(),
+      contact_number: formData.phoneNumber.trim(),
       gender: formData.gender,
       date_of_birth: patientProfile?.date_of_birth || patientProfile?.dob || formData.dateOfBirth,
       address_line_1: formData.addressLine1,
@@ -189,6 +229,7 @@ const PersonalInfoSection = () => {
                 value={formData.firstName}
                 onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                 placeholder="Mick"
+                maxLength={255}
                 className={inputClass}
                 required
               />
@@ -201,6 +242,7 @@ const PersonalInfoSection = () => {
                 value={formData.middleName}
                 onChange={(e) => setFormData({ ...formData, middleName: e.target.value })}
                 placeholder="Middle"
+                maxLength={255}
                 className={inputClass}
               />
             </div>
@@ -212,7 +254,9 @@ const PersonalInfoSection = () => {
                 value={formData.lastName}
                 onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                 placeholder="Will"
+                maxLength={255}
                 className={inputClass}
+                required
               />
             </div>
 
@@ -234,6 +278,7 @@ const PersonalInfoSection = () => {
                 value={formData.phoneNumber}
                 onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
                 placeholder="+1 (721) 544-2275"
+                maxLength={20}
                 className={inputClass}
                 required
               />

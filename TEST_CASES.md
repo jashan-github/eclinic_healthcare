@@ -388,6 +388,35 @@ These are surfaced for awareness — do **not** treat as test failures:
 
 ---
 
+# PR — `fix/staff-module-validation` (Staff module bug pass)
+
+## Messages
+
+| ID | Steps | Expected |
+|---|---|---|
+| STF-MSG-01 | Open `/app/messages`, select an active conversation, leave message empty and click send | Message is not sent; inline validation shows "Message cannot be empty". |
+| STF-MSG-02 | Type or paste more than 5000 characters | Input is capped/validated; send is blocked and the user sees max-length feedback. |
+| STF-MSG-03 | Type a valid message and press Enter | Message is encrypted and sent through the existing WebSocket flow. |
+
+## Calendar — Block Calendar
+
+| ID | Steps | Expected |
+|---|---|---|
+| STF-CAL-01 | Open Block Calendar form | Optional **Reason** textarea is visible. |
+| STF-CAL-02 | Enter a reason and submit | Network payload includes `reason` with the entered trimmed text. |
+| STF-CAL-03 | Leave reason empty and submit | Calendar block still succeeds; payload sends an empty reason for backward compatibility. |
+| STF-CAL-04 | Enter more than 500 characters in reason | Frontend validation blocks submit with a max-length error. |
+
+## Calendar — Create Service
+
+| ID | Steps | Expected |
+|---|---|---|
+| STF-SVC-01 | In Create Service, enter a service name over 255 chars | Zod validation blocks submit with a max-length error. |
+| STF-SVC-02 | In Create Service, enter a nickname over 255 chars | Zod validation blocks submit with a max-length error. |
+| STF-SVC-03 | Login as doctor, create service from available services | Uses doctor-scoped `/v1/doctor/services`; no admin endpoint is called. |
+
+---
+
 # Critical regression checklist (5 minutes)
 
 If you only run a subset, run these first — they cover the highest-impact bugs across all 5 PRs:
