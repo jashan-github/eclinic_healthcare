@@ -51,9 +51,19 @@ const StaffRestrictionsContent: FC = () => {
     }))
   }
 
+  const clinicId = restrictions?.clinic_id
+  const hasClinic = !!clinicId
+
   const handleSave = () => {
+    if (!hasClinic) {
+      // Defensive: button is already disabled, but guard the API call too so a
+      // malformed hardcoded UUID can never reach the backend.
+      toast.error('No clinic is assigned to your account.')
+      return
+    }
+
     const payload = {
-      clinic_id: restrictions?.clinic_id || '3fa85f64-5717-4562-b3fc-2c963f66afa6', // fallback if needed
+      clinic_id: clinicId,
       ...localPermissions,
     }
 
@@ -79,6 +89,22 @@ const StaffRestrictionsContent: FC = () => {
     return (
       <div className="text-center py-10 text-red-600">
         Failed to load staff restrictions. Please try again.
+      </div>
+    )
+  }
+
+  if (!hasClinic) {
+    return (
+      <div className="mx-auto p-6 bg-white rounded-lg">
+        <div className="mb-8">
+          <div className="font-poppins font-bold text-base leading-6 tracking-normal text-[#0F1011]">
+            Staff Restrictions
+          </div>
+        </div>
+        <div className="border border-[#E4E5ED] rounded-lg p-6 bg-[#FFF7ED] text-[#92400E] font-poppins text-sm">
+          You don&apos;t have a clinic assigned yet. Restrictions can&apos;t be configured until an admin assigns
+          your account to a clinic.
+        </div>
       </div>
     )
   }

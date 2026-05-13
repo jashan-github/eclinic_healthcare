@@ -4,6 +4,23 @@ import { useState, useRef, useEffect } from 'react'
 import { toast } from 'react-toastify'
 import { useUploadDocument } from '../hook/use-patient-documents'
 
+const MAX_DOCUMENT_SIZE_BYTES = 10 * 1024 * 1024 // 10 MB
+const ACCEPTED_MIME_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/heic',
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+] as const
+const ACCEPT_ATTR = ACCEPTED_MIME_TYPES.join(',')
+
+const isAcceptedType = (type: string): boolean =>
+  (ACCEPTED_MIME_TYPES as readonly string[]).includes(type)
+
+const isPreviewableImage = (type: string): boolean => type.startsWith('image/')
+
 const UploadSection = () => {
   const [documentType, setDocumentType] = useState('')
   const [issuedBy, setIssuedBy] = useState('')
@@ -26,32 +43,35 @@ const UploadSection = () => {
     setDragActive(e.type === 'dragenter' || e.type === 'dragover')
   }
 
+  const acceptFile = (file: File | undefined): void => {
+    if (!file) return
+    if (!isAcceptedType(file.type)) {
+      toast.error('Unsupported file type. Use JPG, PNG, WEBP, HEIC, PDF, or Word docs.')
+      return
+    }
+    if (file.size > MAX_DOCUMENT_SIZE_BYTES) {
+      toast.error('File must be 10 MB or smaller')
+      return
+    }
+    setSelectedImage(file)
+    if (previewUrl) URL.revokeObjectURL(previewUrl)
+    setPreviewUrl(isPreviewableImage(file.type) ? URL.createObjectURL(file) : null)
+  }
+
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
     setDragActive(false)
-    if (e.dataTransfer.files[0]?.type.startsWith('image/')) {
-      const file = e.dataTransfer.files[0]
-      setSelectedImage(file)
-      setPreviewUrl(URL.createObjectURL(file))
-    } else {
-      toast.error('Only image files allowed')
-    }
+    acceptFile(e.dataTransfer.files[0])
   }
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file?.type.startsWith('image/')) {
-      setSelectedImage(file)
-      setPreviewUrl(URL.createObjectURL(file))
-    } else {
-      toast.error('Only image files allowed')
-    }
+    acceptFile(e.target.files?.[0])
   }
 
   const handleUpload = () => {
     if (!selectedImage || !documentType) {
-      toast.error('Please select an image and enter document type')
+      toast.error('Please select a file and enter document type')
       return
     }
 
@@ -95,16 +115,25 @@ const UploadSection = () => {
       >
         {previewUrl ? (
           <img src={previewUrl} alt="Preview" className="mx-auto max-h-64 rounded" />
+        ) : selectedImage ? (
+          <div className="font-poppins text-sm text-[#0F1011]">
+            <div className="font-medium">{selectedImage.name}</div>
+            <div className="text-[12px] text-gray-500 mt-1">
+              {(selectedImage.size / 1024 / 1024).toFixed(2)} MB
+            </div>
+          </div>
         ) : (
           <>
             <ArrowUpIcon size={48} className="mx-auto text-[#002FD4] mb-4" />
             <p className="font-poppins font-medium text-[14px]">
               Drag & drop or <span className="text-[#002FD4]">browse</span>
             </p>
-            <p className="font-poppins text-[13px] text-gray-500 mt-2">JPG, PNG only</p>
+            <p className="font-poppins text-[13px] text-gray-500 mt-2">
+              JPG, PNG, WEBP, HEIC, PDF, or Word — up to 10&nbsp;MB
+            </p>
           </>
         )}
-        <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileInput} className="hidden" />
+        <input ref={fileInputRef} type="file" accept={ACCEPT_ATTR} onChange={handleFileInput} className="hidden" />
       </div>
 
       <div className="grid grid-cols-2 gap-6 mt-6">

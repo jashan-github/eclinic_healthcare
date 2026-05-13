@@ -1,6 +1,7 @@
 import { ArrowLeftIcon } from "@phosphor-icons/react";
 import { useState, useEffect } from "react";
 import { toast } from "react-toastify";
+import { z } from "zod";
 import type { Doctor, DoctorService } from "@/services/doctors-service";
 import {
   useAppointmentDoctorDetails,
@@ -12,6 +13,33 @@ import AppointmentRequestSubmittedStep from "./appointment-request-submitted-ste
 import PaymentStep from "./payment-step";
 import ConfirmationStep from "./confirmation-step";
 import { useAppointmentRequest } from "../hooks/use-doctor-appointment";
+
+// Backend payload contract for POST /v1/appointments/request.
+const appointmentRequestSchema = z.object({
+  doctor_id: z.string().min(1, "Doctor is required"),
+  service_id: z.string().min(1, "Service is required"),
+  consultation_mode: z.enum(["IN_CLINIC", "TELECONSULTATION"], {
+    message: "Please choose a consultation mode",
+  }),
+  preferred_date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be YYYY-MM-DD")
+    .refine((v) => {
+      const d = new Date(v);
+      if (Number.isNaN(d.getTime())) return false;
+      // Compare against today at 00:00 in local time to allow same-day booking.
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return d.getTime() >= today.getTime();
+    }, "Preferred date cannot be in the past"),
+  preferred_time: z
+    .string()
+    .regex(/^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/, "Preferred time must be HH:MM"),
+  reason: z
+    .string()
+    .max(1000, "Reason must be 1000 characters or fewer")
+    .optional(),
+});
 
 interface BookAppointmentFormProps {
   doctor?: Doctor; // Optional for backward compatibility
@@ -64,10 +92,10 @@ const BookAppointmentForm = ({
 
   // Step 2: Payment Details
   const [referralCode, setReferralCode] = useState("");
-  const [cardNumber, setCardNumber] = useState("1234 5678 9012 3456");
-  const [cardholderName, setCardholderName] = useState("John Doe");
-  const [expiryDate, setExpiryDate] = useState("12/25");
-  const [cvv, setCvv] = useState("123");
+  const [cardNumber, setCardNumber] = useState("");
+  const [cardholderName, setCardholderName] = useState("");
+  const [expiryDate, setExpiryDate] = useState("");
+  const [cvv, setCvv] = useState("");
   const [appointmentStatus, setAppointmentStatus] = useState<string>("PENDING");
 
   const service_id = serviceId?.id ?? "";
@@ -247,12 +275,15 @@ const BookAppointmentForm = ({
     preferred_time: string;
     reason: string;
   }) => {
+    const result = appointmentRequestSchema.safeParse(payload);
+    if (!result.success) {
+      result.error.issues.forEach((issue) => toast.error(issue.message));
+      return;
+    }
     appointmentRequestMutation.mutate(payload, {
       onSuccess: (response: any) => {
-        console.log("📡 Appointment request response:", response);
         // Store the status from API response (check both possible structures)
         const status = response?.status || response?.data?.status || "PENDING";
-        console.log("✅ Setting appointment status:", status);
         setAppointmentStatus(status);
         toast.success("Appointment request sent successfully!");
         handleNext();
@@ -274,12 +305,9 @@ const BookAppointmentForm = ({
       }
       setCurrentStep(2);
     } else if (currentStep === 3) {
-      // Validate payment step
-      if (!cardNumber || !cardholderName || !expiryDate || !cvv) {
-        toast.error("Please fill in all payment details");
-        return;
-      }
-      // Go to final confirmation step
+      // PaymentStep handles its own Zod validation before calling onNext,
+      // so by the time we get here the payload has already passed the
+      // Luhn / expiry / CVV / cardholder checks. Just advance.
       setCurrentStep(4);
     }
   };
