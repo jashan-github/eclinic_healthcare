@@ -21,6 +21,7 @@ import {
 } from '@mantine/core'
 import { GearSixIcon, PhoneIcon } from '@phosphor-icons/react'
 import { useMemo, type FC, type ReactElement } from 'react'
+import { toast } from 'react-toastify'
 import { usePatientFields } from '../../hooks/use-patient-fields'
 import { usePatientMedicalHistory } from '../../hooks/use-patient-medical-history'
 import { useNewPatientForm } from '../../hooks/use-new-patient-form'
@@ -100,21 +101,28 @@ const NewPatientForm: FC<NewPatientFormProps> = ({
     )
   }
 
-  // Handle form submission
-  const handleSubmit = async (values: typeof form.state.values) => {
-    const payload = {
-      ...values,
-      medicalHistory: noKnownMedicalHistory ? [] : medicalHistoryState
-    }
-    try {
-      await fetch('/api/patients', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      })
-    } catch (error) {
-      console.error('Error submitting patient data:', error)
-    }
+  // Handle form submission.
+  //
+  // TODO(backend): this form has no working endpoint yet. The previous code
+  // POSTed to a hardcoded '/api/patients' path that does not exist (404), so
+  // every "Add Patient" silently failed and the user thought it had worked.
+  // The closest live endpoint is POST /v1/users (admin-only, accepts only
+  // basic user fields), which would silently drop most of the data the form
+  // collects — UHID, address, gender, blood group, family contact, medical
+  // history, etc. Wiring to that endpoint would create more confusion than it
+  // solves.
+  //
+  // Until backend exposes a doctor-scoped patient-create endpoint that
+  // accepts the full payload, surface the failure honestly instead of
+  // pretending the save worked.
+  const handleSubmit = async () => {
+    toast.error(
+      'Adding patients is not yet enabled. Please contact your admin to register the patient and try again once they confirm.'
+    )
+    console.warn(
+      '[new-patient] submit blocked — no backend endpoint wired. ' +
+        'See TODO above handleSubmit for the path forward.'
+    )
   }
 
   const showSalutation = useMemo(() => {
@@ -124,6 +132,15 @@ const NewPatientForm: FC<NewPatientFormProps> = ({
   return (
     <form onSubmit={() => form.handleSubmit(handleSubmit)}>
       <Stack gap={'md'}>
+        <div
+          role="status"
+          className="rounded-md border border-[#FCD34D] bg-[#FFFBEB] px-4 py-3 text-sm text-[#92400E] font-poppins"
+        >
+          Adding patients directly from this form isn&apos;t enabled yet —
+          the backend endpoint hasn&apos;t been built. Please contact your
+          admin to register a new patient, then continue here once they
+          confirm.
+        </div>
         <Title order={4}>Basic Information</Title>
 
         {/* Patient Phone number */}
