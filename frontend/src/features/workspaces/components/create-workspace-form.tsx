@@ -12,6 +12,7 @@ import { useForm } from '@mantine/form'
 import { useNavigate } from '@tanstack/react-router'
 import { z } from 'zod'
 import { zodResolver } from 'mantine-form-zod-resolver'
+import { useWorkspaceFlowStore } from '../stores/use-workspace-flow-store'
 
 const formSchema = z.object({
   salutation: z.enum(['Mr', 'Ms', 'Dr'], {
@@ -52,9 +53,14 @@ const formSchema = z.object({
 
 const CreateWorkspaceForm: FC = (): ReactElement => {
   const navigate = useNavigate()
+  const { step1, setStep1 } = useWorkspaceFlowStore()
+
+  // Hydrate from the store so navigating back from step 2 doesn't wipe
+  // what the user already typed. The store is the source of truth for
+  // in-flight flow state.
   const form = useForm<z.infer<typeof formSchema>>({
     validate: zodResolver(formSchema),
-    initialValues: {
+    initialValues: step1 ?? {
       salutation: 'Mr',
       firstName: '',
       middleName: '',
@@ -67,9 +73,8 @@ const CreateWorkspaceForm: FC = (): ReactElement => {
     }
   })
 
-  const onSubmit = () => {
-    // TODO: persist step 1 data in a workspace store before navigating
-    // (no store wired up yet; flow is single-session only).
+  const onSubmit = (values: z.infer<typeof formSchema>) => {
+    setStep1(values)
     navigate({ to: '/workspaces/create-profile' })
   }
 
