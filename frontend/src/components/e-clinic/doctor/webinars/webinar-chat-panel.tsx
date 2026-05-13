@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { PaperPlaneTiltIcon, XIcon } from "@phosphor-icons/react";
 import type { ChatMessage } from "@/hooks/use-webinar-rtm";
 
+const MAX_CHAT_MESSAGE_LENGTH = 1000;
+
 interface WebinarChatPanelProps {
   chatMessages: ChatMessage[];
   onSendMessage: (text: string) => void;
@@ -25,6 +27,7 @@ const WebinarChatPanel = ({
   const handleSend = () => {
     const trimmed = input.trim();
     if (!trimmed) return;
+    if (trimmed.length > MAX_CHAT_MESSAGE_LENGTH) return;
     onSendMessage(trimmed);
     setInput("");
   };
@@ -86,8 +89,9 @@ const WebinarChatPanel = ({
           <input
             type="text"
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => setInput(e.target.value.slice(0, MAX_CHAT_MESSAGE_LENGTH))}
             onKeyDown={handleKeyDown}
+            maxLength={MAX_CHAT_MESSAGE_LENGTH}
             placeholder="Type a message..."
             className="flex-1 bg-gray-700 text-white text-sm rounded-lg px-3 py-2 outline-none placeholder-gray-400 focus:ring-1 focus:ring-blue-500"
           />

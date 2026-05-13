@@ -10,7 +10,13 @@ import {
 } from '@mantine/core'
 import { useState, useEffect, type FC } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { updateDoctorServicePricing, createDoctorServicePricing, type UpdateDoctorServicePricingPayload, type CreateDoctorServicePricingPayload } from '@/services/weekly-schedule'
+import {
+  updateDoctorServicePricing,
+  createDoctorServicePricing,
+  updateDoctorService,
+  type UpdateDoctorServicePricingPayload,
+  type CreateDoctorServicePricingPayload
+} from '@/services/weekly-schedule'
 import { toast } from 'react-toastify'
 
 // Curated currency list covering the markets the clinic serves.
@@ -53,6 +59,7 @@ interface EditServiceModalProps {
   onClose: () => void
   service: {
     id: string
+    assignment_id?: string
     service_name: string
     service_mode: string
     amount: number
@@ -111,18 +118,23 @@ const EditServiceModal: FC<EditServiceModalProps> = ({
   const updatePricingMutation = useMutation({
     mutationFn: ({ pricingId, payload }: { pricingId: string, payload: UpdateDoctorServicePricingPayload }) =>
       updateDoctorServicePricing(pricingId, payload),
-    onSuccess: onMutationSuccess,
     onError: onMutationError
   })
 
   const createPricingMutation = useMutation({
     mutationFn: (payload: CreateDoctorServicePricingPayload) =>
       createDoctorServicePricing(payload),
-    onSuccess: onMutationSuccess,
     onError: onMutationError
   })
 
-  const isSubmitting = updatePricingMutation.isPending || createPricingMutation.isPending
+  const updateServiceMutation = useMutation({
+    mutationFn: ({ assignmentId, slotDuration }: { assignmentId: string, slotDuration: number }) =>
+      updateDoctorService(assignmentId, { slot_duration_minutes: slotDuration }),
+    onError: onMutationError
+  })
+
+  const isSubmitting =
+    updatePricingMutation.isPending || createPricingMutation.isPending || updateServiceMutation.isPending
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -138,23 +150,47 @@ const EditServiceModal: FC<EditServiceModalProps> = ({
       return
     }
 
-    if (service?.pricing_id) {
-      // Update existing pricing record
-      updatePricingMutation.mutate({
-        pricingId: service.pricing_id,
-        payload: {
-          price_amount: priceValue
-        }
-      })
-    } else if (service?.id) {
-      // No pricing record exists yet — create one using the service_id
-      createPricingMutation.mutate({
-        service_id: service.id,
-        price_amount: priceValue,
-        currency: currency
-      })
-    } else {
+    const durationValue = Number(duration)
+    if (!Number.isInteger(durationValue) || durationValue < 5 || durationValue > 360) {
+      toast.error('Duration must be between 5 and 360 minutes')
+      return
+    }
+
+    if (!service?.id) {
       toast.error('Service ID not found. Cannot update pricing.')
+      return
+    }
+
+    if (!service.assignment_id) {
+      toast.error('Service assignment ID not found. Cannot update duration.')
+      return
+    }
+
+    try {
+      await updateServiceMutation.mutateAsync({
+        assignmentId: service.assignment_id,
+        slotDuration: durationValue
+      })
+
+      if (service.pricing_id) {
+        await updatePricingMutation.mutateAsync({
+          pricingId: service.pricing_id,
+          payload: {
+            price_amount: priceValue,
+            currency
+          }
+        })
+      } else {
+        await createPricingMutation.mutateAsync({
+          service_id: service.id,
+          price_amount: priceValue,
+          currency
+        })
+      }
+
+      await onMutationSuccess()
+    } catch {
+      // Individual mutation handlers show the user-facing error.
     }
   }
 
@@ -266,4 +302,3 @@ const EditServiceModal: FC<EditServiceModalProps> = ({
 }
 
 export default EditServiceModal
-

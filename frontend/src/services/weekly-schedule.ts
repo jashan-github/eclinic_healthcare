@@ -332,6 +332,37 @@ export const addDoctorService = async (
   }
 }
 
+export interface UpdateDoctorServicePayload {
+  slot_duration_minutes?: number
+  is_active?: boolean
+}
+
+export interface UpdateDoctorServiceResponse {
+  success: boolean
+  message: string
+  data?: any
+}
+
+export const updateDoctorService = async (
+  assignmentId: string,
+  payload: UpdateDoctorServicePayload
+): Promise<UpdateDoctorServiceResponse> => {
+  try {
+    const response = await api.patch<UpdateDoctorServiceResponse>(
+      `/v1/doctor/services/${assignmentId}`,
+      payload
+    )
+    return response.data
+  } catch (error: any) {
+    console.error('Failed to update doctor service:', error)
+    const message =
+      error?.response?.data?.message ||
+      error?.message ||
+      'Failed to update doctor service'
+    throw new Error(message)
+  }
+}
+
 // Assign service to availability
 export interface AssignServiceToAvailabilityPayload {
   availability_id: string

@@ -354,6 +354,7 @@ These are surfaced for awareness — do **not** treat as test failures:
 - New-patient form's `fetch('/api/patients')` hits a non-existent endpoint; submit silently fails. Wiring to `patientsService` is feature work.
 - Workspace sign-in form is not implemented; the placeholder is intentional.
 - Step-1 → Step-2 state persistence in the workspace flow is not wired.
+- Doctor webinar hosting/create remains backend-blocked; doctors can view/join supported webinars but cannot create new webinars until a doctor-scoped create endpoint exists.
 - ~50 pre-existing lint errors elsewhere in the codebase (unrelated to these PRs).
 - No automated test infrastructure in the repo. These cases are manual.
 
