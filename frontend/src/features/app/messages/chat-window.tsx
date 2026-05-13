@@ -37,6 +37,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   sendTyping,
 }) => {
   const [newMessage, setNewMessage] = useState("");
+  const [messageError, setMessageError] = useState<string | null>(null);
   const typingTimeoutRef = useRef<null | NodeJS.Timeout>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -46,7 +47,13 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   );
 
   const handleTyping = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setNewMessage(e.target.value);
+    const value = e.target.value;
+    setNewMessage(value);
+    setMessageError(
+      value.length > MAX_MESSAGE_LENGTH
+        ? `Message must be ${MAX_MESSAGE_LENGTH} characters or fewer`
+        : null,
+    );
     if (!selectedUser?.id) return;
 
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
@@ -56,15 +63,22 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
 
   const handleSend = async () => {
     const trimmed = newMessage.trim();
-    if (!trimmed || !selectedUser?.id) return;
+    if (!trimmed) {
+      setMessageError("Message cannot be empty");
+      return;
+    }
+    if (!selectedUser?.id) return;
     if (trimmed.length > MAX_MESSAGE_LENGTH) {
-      toast.error(`Message is too long (max ${MAX_MESSAGE_LENGTH} characters)`);
+      const errorMessage = `Message is too long (max ${MAX_MESSAGE_LENGTH} characters)`;
+      setMessageError(errorMessage);
+      toast.error(errorMessage);
       return;
     }
     const encrypted = await encryptMessage(newMessage);
     const success = sendMessage(encrypted);
     if (success) {
       setNewMessage("");
+      setMessageError(null);
       sendTyping(false);
     }
   };
@@ -192,6 +206,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                 }
               }}
               maxLength={MAX_MESSAGE_LENGTH}
+              error={messageError}
               rows={1}
               autosize={false}
               radius="md"
@@ -216,7 +231,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
             />
             <button
               onClick={handleSend}
-              disabled={!newMessage.trim()}
+              disabled={!newMessage.trim() || newMessage.trim().length > MAX_MESSAGE_LENGTH}
               className={`-translate-x-1 pr-6 pl-4 py-3 text-white rounded-md transition-colors flex items-center gap-2 ${
                 newMessage.trim()
                   ? "bg-[#002FD4] hover:bg-[#002FD4]/90"
@@ -227,7 +242,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
             </button>
           </div>
           <div className="mt-2 font-poppins font-normal text-xs leading-4 text-[#64748B]">
-            Press Enter to send, Shift+Enter for new line
+            Press Enter to send, Shift+Enter for new line · {newMessage.length}/{MAX_MESSAGE_LENGTH}
           </div>
         </div>
       ) : (

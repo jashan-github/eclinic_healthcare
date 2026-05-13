@@ -1,6 +1,6 @@
 import type { TimeOffPayload } from '@/types/calendar'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Button, Checkbox, Flex, Stack } from '@mantine/core'
+import { Button, Checkbox, Flex, Stack, Textarea } from '@mantine/core'
 import { DatePicker } from '@mantine/dates'
 import { type FC, type ReactElement } from 'react'
 import { Controller, useForm } from 'react-hook-form'
@@ -16,7 +16,8 @@ const calendarBlockSchema = z.object({
   dates: z.tuple([z.string().nullable(), z.string().nullable()]),
   isFullDay: z.boolean(),
   startTime: z.string().nullable().optional(),
-  endTime: z.string().nullable().optional()
+  endTime: z.string().nullable().optional(),
+  reason: z.string().max(500, 'Reason must be 500 characters or fewer').optional()
 }).refine((data) => {
   // If not full day, both start and end times are required
   if (!data.isFullDay) {
@@ -42,14 +43,15 @@ const BlockCalendarAdd: FC<BlockCalendarAddProps> = ({
   const { saveBlockCalendarSlots, isSaving } = useBlockCalendarSlots()
   const { user } = useAuth()
 
-  const { control, handleSubmit, reset, watch } =
+  const { control, handleSubmit, reset, watch, formState: { errors } } =
     useForm<CalendarBlockForm>({
       resolver: zodResolver(calendarBlockSchema),
       defaultValues: {
         dates: [null, null],
         isFullDay: false,
         startTime: null,
-        endTime: null
+        endTime: null,
+        reason: ''
       }
     })
 
@@ -128,7 +130,7 @@ const BlockCalendarAdd: FC<BlockCalendarAddProps> = ({
         clinic_id: user.clinic_id,
         start_datetime: startISO,
         end_datetime: endISO,
-        reason: '' // TODO: Add reason field to form if needed
+        reason: data.reason?.trim() || ''
       }
 
       await new Promise<void>((resolve, reject) => {
@@ -326,6 +328,41 @@ const BlockCalendarAdd: FC<BlockCalendarAddProps> = ({
                   </div>
                 </div>
               )}
+
+              {/* Optional Reason */}
+              <div className="px-6 pb-4">
+                <Controller
+                  name="reason"
+                  control={control}
+                  render={({ field }) => (
+                    <Textarea
+                      {...field}
+                      value={field.value || ''}
+                      label="Reason"
+                      placeholder="Optional reason for blocking calendar"
+                      autosize
+                      minRows={3}
+                      maxRows={5}
+                      maxLength={500}
+                      error={errors.reason?.message}
+                      styles={{
+                        label: {
+                          fontFamily: 'Poppins, sans-serif',
+                          fontWeight: 500,
+                          fontSize: '14px',
+                          color: '#0F1011',
+                          marginBottom: '8px',
+                        },
+                        input: {
+                          fontFamily: 'Poppins, sans-serif',
+                          fontSize: '14px',
+                          borderRadius: '8px',
+                        },
+                      }}
+                    />
+                  )}
+                />
+              </div>
 
               {/* Buttons */}
               <Flex
