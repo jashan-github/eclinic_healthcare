@@ -31,11 +31,14 @@ services:
     rootDir: backend/fastapi-backend
     dockerfilePath: ./Dockerfile
     dockerContext: .
-    # The image's ENTRYPOINT (scripts/entrypoint.sh) runs migrations when
-    # RUN_MIGRATIONS=true, then exec's whatever we pass below. We override
-    # the CMD here so uvicorn binds to Render's injected $PORT (the
-    # Dockerfile hardcodes 8000, which Render's edge proxy doesn't probe).
-    dockerCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    # Run alembic migrations BEFORE uvicorn boots, chained with `&&` so
+    # a migration failure exits non-zero and Render marks the deploy
+    # failed (instead of starting the app with broken DB state).
+    # `migrate.py` is idempotent — alembic only applies revisions that
+    # haven't run yet, so this is safe on every cold start.
+    # Also binds uvicorn to Render's injected $PORT; the Dockerfile
+    # hardcodes 8000 which Render's edge proxy doesn't probe.
+    dockerCommand: sh -c "python scripts/migrate.py && uvicorn app.main:app --host 0.0.0.0 --port $PORT"
     healthCheckPath: /health
     autoDeploy: true # redeploy on every push to main
     envVars:
@@ -46,8 +49,9 @@ services:
           property: connectionString
 
       # --- Runtime config ---
-      - key: RUN_MIGRATIONS
-        value: "true" # entrypoint.sh runs alembic on every cold start
+      # NB: RUN_MIGRATIONS is intentionally NOT set — migrations are
+      # chained directly into dockerCommand above so failures surface
+      # in Logs instead of being silently swallowed by entrypoint.sh.
       - key: PYTHON_VERSION
         value: "3.11"
 
