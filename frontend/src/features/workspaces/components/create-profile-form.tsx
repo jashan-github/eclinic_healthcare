@@ -11,6 +11,7 @@ import { useForm } from '@mantine/form'
 import { zodResolver } from 'mantine-form-zod-resolver'
 import { type FC, type ReactElement } from 'react'
 import { z } from 'zod'
+import { useWorkspaceFlowStore } from '../stores/use-workspace-flow-store'
 
 const formSchema = z.object({
   salutation: z.enum(['Mr', 'Ms', 'Dr'], {
@@ -50,9 +51,14 @@ const formSchema = z.object({
 })
 
 const CreateProfileForm: FC = (): ReactElement => {
+  const { step1, clearWorkspaceFlow } = useWorkspaceFlowStore()
+
+  // Pre-fill with whatever the user entered in step 1 (workspace details).
+  // Falls back to the field defaults if the user landed here directly
+  // (e.g. deep link / page refresh).
   const form = useForm<z.infer<typeof formSchema>>({
     validate: zodResolver(formSchema),
-    initialValues: {
+    initialValues: step1 ?? {
       salutation: 'Mr',
       firstName: '',
       middleName: '',
@@ -66,7 +72,11 @@ const CreateProfileForm: FC = (): ReactElement => {
   })
 
   const onSubmit = (data: z.infer<typeof formSchema>) => {
+    // TODO(backend): wire to real workspace-create endpoint when it exists.
+    // For now just log — but clear the in-memory flow state so the next
+    // visit starts fresh instead of pre-filling stale values.
     console.log('Form submitted:', data)
+    clearWorkspaceFlow()
   }
   return (
     <form
