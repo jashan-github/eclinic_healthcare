@@ -16,7 +16,7 @@ export const Route = createFileRoute('/app/_app-layout/(common)/vital-signs')({
   loader: () => {
     useHeaderStore.getState().setPageTitle('Vital Signs')
   },
-  component: () => {
+  component: function VitalSignsRoute() {
     const { user } = useAuth()
     const roleFromStorage = localStorage.getItem('role')
     const role = (user?.role || roleFromStorage || '')

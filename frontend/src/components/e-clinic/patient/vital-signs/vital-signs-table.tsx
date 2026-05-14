@@ -24,7 +24,7 @@ export default function VitalSignsTable({
 }: Props) {
   const { user } = useAuth();
   let patientId = '';
-  let urlId = useParams({ strict: false })
+  const urlId = useParams({ strict: false })
   if(user?.role === 'patient'){
     patientId = user.id
   }

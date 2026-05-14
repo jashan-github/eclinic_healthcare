@@ -10,11 +10,11 @@ import { queryOptions } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/app/_app-layout/(common)/patients/')({
-  component: () => {
+  component: function PatientsRoute() {
     const { user } = useAuth()
     const roleFromStorage = localStorage.getItem('role')
     const role = (user?.role || roleFromStorage || '')
-    
+
     if (role !== 'doctor') {
       return <NotFound />
     }

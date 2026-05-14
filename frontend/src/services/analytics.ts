@@ -53,7 +53,7 @@ export const fetchAnalyticsOverview = async (): Promise<AnalyticsOverview> => {
   }
 }
 
-export const fetchAnalyticsSummary = async (): Promise<String> => {
+export const fetchAnalyticsSummary = async (): Promise<string> => {
   try {
     const response = await api.get(`/analytics/summary`)
     return response.data

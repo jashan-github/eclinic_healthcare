@@ -58,8 +58,7 @@ export const createNewService = async (
 
     formData.append('prefer_not_to_define_price', payload.skip_price ? '1' : '0')
 
-    if (payload.skip_price) {
-    } else {
+    if (!payload.skip_price) {
       formData.append('amount', String(payload.amount))
     }
 

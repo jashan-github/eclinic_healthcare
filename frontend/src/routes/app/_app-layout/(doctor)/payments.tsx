@@ -6,7 +6,7 @@ import { useHeaderStore } from '@/store/use-header-store'
 import { createFileRoute } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/app/_app-layout/(doctor)/payments')({
-    component: () => {
+  component: function DoctorPaymentsRoute() {
     const { user } = useAuth()
     const roleFromStorage = localStorage.getItem('role')
     const role = (user?.role || roleFromStorage || '')

@@ -53,7 +53,8 @@ const formatTime = (time: string) => {
 };
 
 const DataTable: FC = (): ReactElement => {
-  const [statusFilter, _] = useState("All");
+  // Status filter is currently fixed to "All"; setter intentionally omitted.
+  const [statusFilter] = useState("All");
 
   const { data, isLoading, isError } = useDashboardActiveAppointments();
   const downloadMutation = useDownloadStaffInvoice();

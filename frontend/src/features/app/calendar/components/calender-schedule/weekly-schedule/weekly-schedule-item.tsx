@@ -181,7 +181,7 @@ const WeeklyScheduleItem = memo(({ dayName, doctorSchedules }: Props) => {
           // Refresh schedules after saving
           setLocalDoctorSchedules(doctorSchedules);
           setIsEditing(false);
-        } catch (error) {
+        } catch {
           toast.error("Some slots failed to save. Please check and try again.");
           // Don't exit edit mode if save failed
         }

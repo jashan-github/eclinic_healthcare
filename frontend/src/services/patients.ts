@@ -47,16 +47,15 @@ const mockPatientConditions: PatientCondition[] = [
   { label: 'Smoke', isActive: false },
 ]
 
-export const fetchPatientConditions = async ({
-//   queryKey,
-}: QueryFunctionContext<readonly ['patientConditions', string]>): Promise<PatientCondition[]> => {
-//   const [, patientId] = queryKey 
-
+export const fetchPatientConditions = async (
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _ctx: QueryFunctionContext<readonly ['patientConditions', string]>
+): Promise<PatientCondition[]> => {
+  // TODO(backend): wire to real endpoint when ready.
+  // const [, patientId] = _ctx.queryKey
+  // const { data } = await axiosInstance.get(`v5/doctor/patient/${patientId}/history`)
+  // return data.data
   try {
-    // const { data } = await axiosInstance.get(
-    //   `v5/doctor/patient/${patientId}/history`
-    // )
-    // return data.data
     return mockPatientConditions
   } catch (error) {
     console.error('Failed to fetch patient history:', error)
@@ -64,9 +63,10 @@ export const fetchPatientConditions = async ({
   }
 }
 
-export const fetchPatientPersonalDetails = async ({
-  // queryKey,
-}: QueryFunctionContext<readonly ['patientDetails', string]>): Promise<PatientPersonalDetails> => {
+export const fetchPatientPersonalDetails = async (
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _ctx: QueryFunctionContext<readonly ['patientDetails', string]>
+): Promise<PatientPersonalDetails> => {
   // const [, patientId] = queryKey
 
   try {

@@ -69,7 +69,7 @@ const CalendarView = () => {
 
     const formatTimeForComparison = (time12: string) => {
         const [time, period] = time12.split(' ')
-        let [hours, minutes] = time.split(':')
+        const [hours, minutes] = time.split(':')
         let h = parseInt(hours)
         if (period === 'PM' && h !== 12) h += 12
         if (period === 'AM' && h === 12) h = 0

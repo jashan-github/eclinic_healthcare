@@ -16,15 +16,15 @@ export const Route = createFileRoute('/app/_app-layout/(doctor)/requests')({
   loader: () => {
     useHeaderStore.getState().setPageTitle('Requests')
   },
-      component: () => {
-      const { user } = useAuth()
-      const roleFromStorage = localStorage.getItem('role')
-      const role = (user?.role || roleFromStorage || '')
-  
-      if (role !== 'doctor') {
-        return <NotFound />
-      }
-  
-      return <RequestsPage />
-    },
+  component: function RequestsRoute() {
+    const { user } = useAuth()
+    const roleFromStorage = localStorage.getItem('role')
+    const role = (user?.role || roleFromStorage || '')
+
+    if (role !== 'doctor') {
+      return <NotFound />
+    }
+
+    return <RequestsPage />
+  },
 })

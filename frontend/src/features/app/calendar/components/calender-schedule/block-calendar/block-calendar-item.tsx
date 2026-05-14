@@ -42,7 +42,7 @@ const BlockCalendarItem = memo(({ bookedSlot }: { bookedSlot: TimeOffItem }) => 
       
       // Compare date strings directly
       return startDateStr === endDateStr
-    } catch (error) {
+    } catch {
       // Fallback to date comparison if parsing fails
       const start = parseISO(start_datetime)
       const end = parseISO(end_datetime)

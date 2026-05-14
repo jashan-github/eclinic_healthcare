@@ -51,7 +51,11 @@ const FormInput = (props: FormInputComponentProps) => {
 
   const renderInput = () => {
     if (isTextarea) {
-      const { as, label, labelClassName, error, icon, iconPosition, containerClassName, inputClassName, ...textareaProps } = props as FormTextareaProps
+      const {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        as, label, labelClassName, error, icon, iconPosition, containerClassName, inputClassName,
+        ...textareaProps
+      } = props as FormTextareaProps
       return (
         <textarea
           {...textareaProps}
@@ -61,7 +65,11 @@ const FormInput = (props: FormInputComponentProps) => {
       )
     }
 
-    const { as, label, labelClassName, error, icon, iconPosition, containerClassName, inputClassName, ...inputAttributes } = props as FormInputProps
+    const {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      as, label, labelClassName, error, icon, iconPosition, containerClassName, inputClassName,
+      ...inputAttributes
+    } = props as FormInputProps
     return (
       <input
         {...inputAttributes}

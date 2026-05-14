@@ -52,7 +52,11 @@ let axiosInstanceRef: AxiosInstance | null = null
 
 const processQueue = (error: any, token: string | null = null) => {
   failedQueue.forEach(promise => {
-    error ? promise.reject(error) : promise.resolve(token!)
+    if (error) {
+      promise.reject(error)
+    } else {
+      promise.resolve(token!)
+    }
   })
   failedQueue = []
 }
