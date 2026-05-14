@@ -427,9 +427,7 @@ const AgoraWebinarRoom = ({
         localVideoTrack.close()
       }
 
-      // @ts-expect-error - Agora SDK types are narrower than the runtime shape
       await client.publish([newScreenTrack])
-      // @ts-expect-error - newScreenTrack is the screen-only variant, not the full LocalVideoTrack
       setScreenTrack(newScreenTrack)
       setIsScreenSharing(true)
       toast.success('Screen sharing started')

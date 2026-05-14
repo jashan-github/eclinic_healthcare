@@ -75,7 +75,7 @@ const OverviewGraph: FC = (): ReactElement => {
                 fontFamily: 'Poppins',
                 fontSize: '12px'
               }}
-              formatter={(value: number) => [`$${value.toLocaleString()}`, 'Revenue']}
+              formatter={(value: any) => [`$${value.toLocaleString()}`, 'Revenue']}
               labelStyle={{ fontFamily: 'Poppins', fontWeight: 600 }}
             />
             <Area

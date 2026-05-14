@@ -68,7 +68,7 @@ const RevenueChart = () => {
             borderRadius: '8px',
             fontFamily: 'Poppins'
           }}
-          formatter={(value: number) => [`$${value.toLocaleString()}`, '']}
+          formatter={(value: any) => [`$${value.toLocaleString()}`, '']}
         />
         <Legend
           wrapperStyle={{
