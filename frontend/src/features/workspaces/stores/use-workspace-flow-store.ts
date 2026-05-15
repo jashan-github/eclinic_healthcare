@@ -7,7 +7,7 @@ import { create } from 'zustand'
 export interface WorkspaceFlowStep1 {
   salutation: 'Mr' | 'Ms' | 'Dr'
   firstName: string
-  middleName: string
+  middleName?: string
   lastName: string
   gender: 'male' | 'female' | 'other'
   dob: string

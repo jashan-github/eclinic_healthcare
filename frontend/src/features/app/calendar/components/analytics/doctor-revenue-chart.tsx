@@ -59,9 +59,10 @@ const DoctorRevenueChart: React.FC<DoctorRevenueChartProps> = ({ monthlyPerforma
             borderRadius: '8px',
             fontFamily: 'Poppins'
           }}
-          formatter={(value: any, name: any) => {
-            if (name === 'revenue') return [formatFee(value, currency), 'Revenue']
-            return [value, 'Appointments']
+          formatter={(value, name) => {
+            const n = Number(value ?? 0)
+            if (name === 'revenue') return [formatFee(n, currency), 'Revenue']
+            return [n, 'Appointments']
           }}
         />
         <Legend

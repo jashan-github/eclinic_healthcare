@@ -68,9 +68,10 @@ const WebinarChart = () => {
             borderRadius: '8px',
             fontFamily: 'Poppins'
           }}
-          formatter={(value: any, name: any) => {
-            if (name === 'amount_collected') return [`$${value.toLocaleString()}`, '']
-            return [value, '']
+          formatter={(value, name) => {
+            const n = Number(value ?? 0)
+            if (name === 'amount_collected') return [`$${n.toLocaleString()}`, '']
+            return [n, '']
           }}
         />
         <Legend
